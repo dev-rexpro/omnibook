@@ -41,17 +41,6 @@ const STUDIO_ITEMS = [
   { icon: "table_view", label: "Data Table" },
 ]
 
-const MOBILE_COLORS = [
-  { bg: "bg-indigo-50/80 dark:bg-indigo-950/20", border: "border-indigo-100 dark:border-indigo-900/30", text: "text-indigo-600 dark:text-indigo-400" }, // Audio Overview
-  { bg: "bg-amber-50/80 dark:bg-amber-950/20", border: "border-amber-100 dark:border-amber-900/30", text: "text-amber-600 dark:text-amber-400" }, // Slide Deck
-  { bg: "bg-emerald-50/80 dark:bg-emerald-950/20", border: "border-emerald-100 dark:border-emerald-900/30", text: "text-emerald-600 dark:text-emerald-400" }, // Video Overview
-  { bg: "bg-fuchsia-50/80 dark:bg-fuchsia-950/20", border: "border-fuchsia-100 dark:border-fuchsia-900/30", text: "text-fuchsia-600 dark:text-fuchsia-400" }, // Mind Map
-  { bg: "bg-stone-50/80 dark:bg-stone-900/20", border: "border-stone-200 dark:border-stone-800/30", text: "text-stone-600 dark:text-stone-400" }, // Reports
-  { bg: "bg-orange-50/80 dark:bg-orange-950/20", border: "border-orange-100 dark:border-orange-900/30", text: "text-orange-600 dark:text-orange-400" }, // Flashcards
-  { bg: "bg-cyan-50/80 dark:bg-cyan-950/20", border: "border-cyan-100 dark:border-cyan-900/30", text: "text-cyan-600 dark:text-cyan-400" }, // Quiz
-  { bg: "bg-pink-50/80 dark:bg-pink-950/20", border: "border-pink-100 dark:border-pink-900/30", text: "text-pink-600 dark:text-pink-400" }, // Infographic
-  { bg: "bg-sky-50/80 dark:bg-sky-950/20", border: "border-sky-100 dark:border-sky-900/30", text: "text-sky-600 dark:text-sky-400" }, // Data Table
-]
 
 export function RightSidebar({
   isCollapsed,
@@ -134,40 +123,37 @@ export function RightSidebar({
           /* Main studio cards list and notes list */
           <div className="flex-1 flex flex-col overflow-hidden relative">
             <div className="flex-1 overflow-y-auto flex flex-col pb-24">
-              {/* Colored items grid */}
+              {/* Items grid */}
               <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0">
-                {STUDIO_ITEMS.map((item, index) => {
-                  const colors = MOBILE_COLORS[index] || { bg: "bg-muted", border: "border-border", text: "text-foreground" }
-                  return (
-                    <div
-                      key={index}
-                      onClick={() => {
+                {STUDIO_ITEMS.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      if (onChevronClick) onChevronClick(item.label)
+                    }}
+                    className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
+                  >
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                        {item.icon}
+                      </span>
+                      <span className="text-[12px] font-semibold text-foreground truncate font-sans animate-none" title={item.label}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
                         if (onChevronClick) onChevronClick(item.label)
                       }}
-                      className={`border ${colors.border} ${colors.bg} rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-accent transition-colors cursor-pointer outline-none border-none animate-none"
                     >
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
-                        <span className={`material-symbols-outlined text-[16px] ${colors.text}`}>
-                          {item.icon}
-                        </span>
-                        <span className={`text-[12px] font-semibold truncate font-sans ${colors.text}`} title={item.label}>
-                          {item.label}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (onChevronClick) onChevronClick(item.label)
-                        }}
-                        className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer outline-none border-none"
-                      >
-                        <span className={`material-symbols-outlined text-[16px] ${colors.text}`}>
-                          chevron_right
-                        </span>
-                      </button>
-                    </div>
-                  )
-                })}
+                      <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                        chevron_right
+                      </span>
+                    </button>
+                  </div>
+                ))}
               </div>
 
               {/* Notes list or Empty state */}
@@ -404,13 +390,13 @@ export function RightSidebar({
                   onClick={() => {
                     if (onChevronClick) onChevronClick(item.label)
                   }}
-                  className="border border-zinc-150 hover:bg-zinc-50 text-zinc-800 rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
+                  className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
                 >
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <span className="material-symbols-outlined text-[16px] text-zinc-700">
+                    <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
                       {item.icon}
                     </span>
-                    <span className="text-[13px] font-semibold text-zinc-800 truncate font-sans" title={item.label}>
+                    <span className="text-[13px] font-semibold text-foreground truncate font-sans" title={item.label}>
                       {item.label}
                     </span>
                   </div>
@@ -419,9 +405,9 @@ export function RightSidebar({
                       e.stopPropagation()
                       if (onChevronClick) onChevronClick(item.label)
                     }}
-                    className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 transition-colors opacity-0 group-hover/item:opacity-100 cursor-pointer outline-none border-none"
+                    className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-accent transition-colors opacity-0 group-hover/item:opacity-100 cursor-pointer outline-none border-none"
                   >
-                    <span className="material-symbols-outlined text-[16px] text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+                    <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
                       chevron_right
                     </span>
                   </button>

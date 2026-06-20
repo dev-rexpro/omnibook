@@ -13,10 +13,26 @@ import { CustomizeNotebookDialog } from "@/components/CustomizeNotebookDialog"
 import { HomePage } from "@/components/HomePage"
 import { AuthPage } from "@/components/AuthPage"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useTheme } from "@/components/theme-provider"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+} from "@/components/ui/dropdown-menu"
 
 export function App() {
   // Auth state from store
-  const { isAuthenticated, isLoading: isAuthLoading, initSession } = useAuthStore()
+  const { isAuthenticated, isLoading: isAuthLoading, initSession, user, signOut } = useAuthStore()
+  const { theme, setTheme } = useTheme()
+  const [mobileMenuView, setMobileMenuView] = useState<"main" | "theme">("main")
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false)
+
+  const handleMobileOpenChange = (open: boolean) => {
+    setMobileDropdownOpen(open)
+    if (!open) {
+      setMobileMenuView("main")
+    }
+  }
 
   // Restore session on mount
   useEffect(() => {
@@ -313,19 +329,148 @@ export function App() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setIsNotebookDialogOpen(true)}
-                  className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full transition cursor-pointer outline-none bg-transparent border-none"
-                >
-                  <span className="material-symbols-outlined text-[20px]">settings</span>
-                </button>
-                <button className="w-[32px] h-[32px] rounded-full border border-border overflow-hidden bg-card flex items-center justify-center hover:opacity-90 transition outline-none cursor-pointer p-0">
-                  <img
-                    src="https://ui-avatars.com/api/?name=User&background=f4f4f5&color=09090b&bold=true"
-                    className="w-full h-full object-cover"
-                    alt="User Profile"
-                  />
-                </button>
+                <DropdownMenu open={mobileDropdownOpen} onOpenChange={handleMobileOpenChange}>
+                  <DropdownMenuTrigger asChild>
+                    <button 
+                      className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full transition cursor-pointer outline-none bg-transparent border-none"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">settings</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={6}
+                    className="w-[200px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[14px] flex flex-col font-sans outline-none"
+                  >
+                    {mobileMenuView === "main" ? (
+                      <div className="flex flex-col w-full">
+                        <button
+                          onClick={() => {
+                            setMobileDropdownOpen(false)
+                            setIsNotebookDialogOpen(true)
+                          }}
+                          className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px]">rule_settings</span>
+                            <span>Change Model</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setMobileMenuView("theme")
+                          }}
+                          className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px]">tonality</span>
+                            <span>Switch Theme</span>
+                          </div>
+                          <span className="material-symbols-outlined text-[16px] text-muted-foreground">
+                            chevron_right
+                          </span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col w-full">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setMobileMenuView("main")
+                          }}
+                          className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                          <span className="font-medium">Back</span>
+                        </button>
+
+                        <button
+                          className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                          onClick={() => {
+                            setTheme("light")
+                            setMobileDropdownOpen(false)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px]">light_mode</span>
+                            <span>Light</span>
+                          </div>
+                          {theme === "light" && (
+                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                              check
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                          onClick={() => {
+                            setTheme("dark")
+                            setMobileDropdownOpen(false)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px]">dark_mode</span>
+                            <span>Dark</span>
+                          </div>
+                          {theme === "dark" && (
+                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                              check
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
+                          onClick={() => {
+                            setTheme("system")
+                            setMobileDropdownOpen(false)
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[16px]">desktop_windows</span>
+                            <span>System</span>
+                          </div>
+                          {theme === "system" && (
+                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                              check
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="w-[32px] h-[32px] rounded-full border border-border overflow-hidden bg-card flex items-center justify-center hover:opacity-90 transition outline-none cursor-pointer p-0">
+                      <img
+                        src={user?.avatarUrl || "https://ui-avatars.com/api/?name=User&background=f4f4f5&color=09090b&bold=true"}
+                        className="w-full h-full object-cover"
+                        alt="User Profile"
+                      />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    sideOffset={6}
+                    className="w-[200px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-2 z-50 flex flex-col font-sans outline-none text-[13px]"
+                  >
+                    <div className="px-3 py-1.5 border-b border-border flex flex-col select-none">
+                      <span className="font-semibold text-foreground truncate">{user?.name || "User"}</span>
+                      <span className="text-[11px] text-muted-foreground truncate">{user?.email || ""}</span>
+                    </div>
+                    <button
+                      onClick={() => signOut()}
+                      className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans border-none bg-transparent text-[13px]"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">logout</span>
+                      <span>Sign Out</span>
+                    </button>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </header>
 
