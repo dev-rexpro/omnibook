@@ -115,15 +115,15 @@ export function AuthPage() {
       
       {/* ─── Header Logo & App Title ─── */}
       <div className="flex items-center gap-2.5 mb-6 select-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-        <div className="icon-container-active" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+        <div className="icon-container-active">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2.5"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
@@ -138,7 +138,7 @@ export function AuthPage() {
       </div>
 
       {/* ─── Card Container (strictly flat border, no shadow, clean shadcn style) ─── */}
-      <div className="w-full max-w-[400px] bg-card text-card-foreground border border-border rounded-2xl p-6 md:p-8 flex flex-col gap-5 transition-all duration-300">
+      <div className="w-full max-w-[400px] bg-card text-card-foreground border border-border rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col gap-5 transition-all duration-300">
         
         {/* Sign In View */}
         {view === "signin" && (
@@ -455,7 +455,7 @@ export function AuthPage() {
             </div>
 
             {/* Third-party buttons matching Shadcn Admin style */}
-            <div className="flex gap-2.5 w-full">
+            <div className="flex flex-col sm:flex-row gap-2.5 w-full">
               <button
                 onClick={() => setShowGoogleMock(true)}
                 disabled={isLoading}
