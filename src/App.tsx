@@ -14,6 +14,7 @@ import { HomePage } from "@/components/HomePage"
 import { AuthPage } from "@/components/AuthPage"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useTheme } from "@/components/theme-provider"
+import { getNotebooks, saveNotebooks } from "@/lib/db"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -43,8 +44,98 @@ export function App() {
   const [currentPage, setCurrentPage] = useState<"home" | "notebook">("home")
   const [loadingTitle, setLoadingTitle] = useState<string | null>(null)
 
+  // Stateful personal notebooks list (persisted via IndexedDB per user)
+  const [myNotebooks, setMyNotebooks] = useState<any[]>([])
+  const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+
   const [notebookTitle, setNotebookTitle] = useState("Untitled notebook")
   const [notebookCover, setNotebookCover] = useState<string | null>(null)
+
+  // Load notebooks from IndexedDB when user is loaded
+  useEffect(() => {
+    setIsLoaded(false)
+    if (user?.email) {
+      getNotebooks(user.email).then((stored) => {
+        if (stored && stored.length > 0) {
+          setMyNotebooks(stored)
+          setIsLoaded(true)
+        } else {
+          // Check for localStorage migration fallback
+          const localStored = localStorage.getItem(`omnibook_notebooks_${user.email}`)
+          if (localStored) {
+            try {
+              const parsed = JSON.parse(localStored)
+              setMyNotebooks(parsed)
+              saveNotebooks(user.email, parsed).then(() => {
+                localStorage.removeItem(`omnibook_notebooks_${user.email}`)
+              })
+              setIsLoaded(true)
+              return
+            } catch (e) {
+              console.error("Failed to parse localStorage notebooks for migration:", e)
+            }
+          }
+
+          // Default seed data
+          const initial: any[] = []
+          setMyNotebooks(initial)
+          saveNotebooks(user.email, initial).catch((err) => {
+            console.error("Failed to save initial notebooks:", err)
+          })
+          setIsLoaded(true)
+        }
+      }).catch((err) => {
+        console.error("Failed to load notebooks from IndexedDB:", err)
+        setIsLoaded(true)
+      })
+    } else {
+      setMyNotebooks([])
+      setActiveNotebookId(null)
+      setNotebookTitle("Untitled notebook")
+      setNotebookCover(null)
+      setNotes([])
+      setMessages([])
+    }
+  }, [user?.email])
+
+  // Save notebooks list back to IndexedDB on change (only after initial load has finished)
+  useEffect(() => {
+    if (user?.email && isLoaded) {
+      saveNotebooks(user.email, myNotebooks).catch((err) => {
+        console.error("Failed to save notebooks to IndexedDB:", err)
+      })
+    }
+  }, [myNotebooks, user?.email, isLoaded])
+
+  // Handlers for dynamic state sync
+  const handleTitleChange = (newTitle: string) => {
+    setNotebookTitle(newTitle)
+    setMyNotebooks(prev =>
+      prev.map(nb => nb.id === activeNotebookId ? { ...nb, title: newTitle } : nb)
+    )
+  }
+
+  const handleCoverChange = (newCover: string | null) => {
+    setNotebookCover(newCover)
+    setMyNotebooks(prev =>
+      prev.map(nb => nb.id === activeNotebookId ? { ...nb, cover: newCover } : nb)
+    )
+  }
+
+  // Load notebook specific notes and messages when switching notebooks
+  useEffect(() => {
+    if (activeNotebookId) {
+      const activeNb = myNotebooks.find(nb => nb.id === activeNotebookId)
+      if (activeNb) {
+        setNotes(activeNb.notes || [])
+        setMessages(activeNb.messages || [])
+      }
+    } else {
+      setNotes([])
+      setMessages([])
+    }
+  }, [activeNotebookId])
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const [isRightCollapsed, setIsRightCollapsed] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -60,6 +151,9 @@ export function App() {
 
   const handleDeleteChatHistory = () => {
     setMessages([])
+    setMyNotebooks(prev =>
+      prev.map(nb => nb.id === activeNotebookId ? { ...nb, messages: [] } : nb)
+    )
   }
 
   const handleSaveToNote = (queryText: string, responseText: string) => {
@@ -80,7 +174,13 @@ export function App() {
       createdAt: "Just now"
     }
 
-    setNotes(prev => [...prev, newNote])
+    setNotes(prev => {
+      const updated = [...prev, newNote]
+      setMyNotebooks(prevNbs =>
+        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
+      )
+      return updated
+    })
   }
 
   const handleSendMessage = (text: string) => {
@@ -103,7 +203,13 @@ export function App() {
       ]
     }
 
-    setMessages(prev => [...prev, newUserMsg, newAiMsg])
+    setMessages(prev => {
+      const updated = [...prev, newUserMsg, newAiMsg]
+      setMyNotebooks(prevNbs =>
+        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, messages: updated } : nb)
+      )
+      return updated
+    })
   }
 
   const handlePromptClick = (text: string) => {
@@ -174,7 +280,13 @@ export function App() {
       suggestedPrompts: prompts
     }
 
-    setMessages(prev => [...prev, newUserMsg, newAiMsg])
+    setMessages(prev => {
+      const updated = [...prev, newUserMsg, newAiMsg]
+      setMyNotebooks(prevNbs =>
+        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, messages: updated } : nb)
+      )
+      return updated
+    })
     setActiveMobileTab("chat")
   }
 
@@ -220,11 +332,23 @@ export function App() {
         createdAt: "Just now"
       }
     }
-    setNotes(prev => [...prev, newNote])
+    setNotes(prev => {
+      const updated = [...prev, newNote]
+      setMyNotebooks(prevNbs =>
+        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
+      )
+      return updated
+    })
   }
 
   const handleDeleteNote = (id: string) => {
-    setNotes(prev => prev.filter(note => note.id !== id))
+    setNotes(prev => {
+      const updated = prev.filter(note => note.id !== id)
+      setMyNotebooks(prevNbs =>
+        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
+      )
+      return updated
+    })
     if (selectedNoteId === id) {
       setSelectedNoteId(null)
     }
@@ -242,11 +366,55 @@ export function App() {
   }
 
   const handleCreateNotebook = () => {
+    const newId = `nb-${Date.now()}`
+    const newNb = {
+      id: newId,
+      title: "Untitled notebook",
+      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      sources: 0,
+      cover: null
+    }
+    setMyNotebooks(prev => [newNb, ...prev])
+    setActiveNotebookId(newId)
+    setNotebookTitle("Untitled notebook")
+    setNotebookCover(null)
+    setMessages([])
     startLoading("Untitled notebook", "notebook")
   }
 
-  const handleOpenNotebook = (title: string) => {
-    startLoading(title, "notebook")
+  const handleOpenNotebook = (idOrTitle: string) => {
+    const nb = myNotebooks.find(n => n.id === idOrTitle || n.title === idOrTitle)
+    if (nb) {
+      setActiveNotebookId(nb.id)
+      setNotebookTitle(nb.title)
+      setNotebookCover(nb.cover || null)
+      setMessages([])
+      startLoading(nb.title, "notebook")
+    } else {
+      const existing = myNotebooks.find(n => n.title === idOrTitle)
+      if (existing) {
+        setActiveNotebookId(existing.id)
+        setNotebookTitle(existing.title)
+        setNotebookCover(existing.cover || null)
+        setMessages([])
+        startLoading(existing.title, "notebook")
+      } else {
+        const newId = `nb-${Date.now()}`
+        const newNb = {
+          id: newId,
+          title: idOrTitle,
+          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          sources: 0,
+          cover: null
+        }
+        setMyNotebooks(prev => [newNb, ...prev])
+        setActiveNotebookId(newId)
+        setNotebookTitle(idOrTitle)
+        setNotebookCover(null)
+        setMessages([])
+        startLoading(idOrTitle, "notebook")
+      }
+    }
   }
 
   const handleNavigateToHome = () => {
@@ -291,6 +459,8 @@ export function App() {
         <HomePage
           onCreateNotebook={handleCreateNotebook}
           onOpenNotebook={handleOpenNotebook}
+          myNotebooks={myNotebooks}
+          setMyNotebooks={setMyNotebooks}
         />
       ) : (
         <div className="font-sans h-screen flex flex-col overflow-hidden relative bg-background text-foreground">
@@ -552,7 +722,7 @@ export function App() {
           <div className="hidden md:block">
             <Header
               notebookTitle={notebookTitle}
-              onTitleChange={setNotebookTitle}
+              onTitleChange={handleTitleChange}
               onLogoClick={handleNavigateToHome}
               onCreateNotebook={handleCreateNotebook}
             />
@@ -630,9 +800,9 @@ export function App() {
             open={isNotebookDialogOpen}
             onOpenChange={setIsNotebookDialogOpen}
             notebookTitle={notebookTitle}
-            onTitleChange={setNotebookTitle}
+            onTitleChange={handleTitleChange}
             notebookCover={notebookCover}
-            onCoverChange={setNotebookCover}
+            onCoverChange={handleCoverChange}
           />
         </div>
       )}

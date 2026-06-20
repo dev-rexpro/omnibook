@@ -12,16 +12,19 @@ import {
 } from "@/components/ui/dialog"
 import { useAuthStore } from "@/store/useAuthStore"
 
-interface HomePageProps {
-  onCreateNotebook: () => void
-  onOpenNotebook: (title: string) => void
-}
-
 interface Notebook {
   id: string
   title: string
   date: string
   sources: number
+  cover?: string | null
+}
+
+interface HomePageProps {
+  onCreateNotebook: () => void
+  onOpenNotebook: (idOrTitle: string) => void
+  myNotebooks: Notebook[]
+  setMyNotebooks: React.Dispatch<React.SetStateAction<Notebook[]>>
 }
 
 interface FeaturedNotebook {
@@ -64,16 +67,7 @@ const INITIAL_FEATURED: FeaturedNotebook[] = [
   },
 ]
 
-const INITIAL_MY: Notebook[] = [
-  { id: "nb-1", title: "Untitled notebook", date: "Jun 20, 2026", sources: 0 },
-  { id: "nb-2", title: "Untitled notebook", date: "Jun 20, 2026", sources: 0 },
-  { id: "nb-3", title: "Untitled notebook", date: "Jun 20, 2026", sources: 0 },
-  { id: "nb-4", title: "Untitled notebook", date: "Jun 19, 2026", sources: 0 },
-  { id: "nb-5", title: "Untitled notebook", date: "Jun 19, 2026", sources: 0 },
-  { id: "nb-6", title: "The Modern Shadcn UI...", date: "Jun 18, 2026", sources: 10 },
-]
-
-export function HomePage({ onCreateNotebook, onOpenNotebook }: HomePageProps) {
+export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyNotebooks }: HomePageProps) {
   const { theme, setTheme } = useTheme()
   const { user, signOut } = useAuthStore()
   const [activeTab, setActiveTab] = useState<"all" | "my" | "featured">("all")
@@ -82,7 +76,6 @@ export function HomePage({ onCreateNotebook, onOpenNotebook }: HomePageProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   // Stateful notebooks
-  const [myNotebooks, setMyNotebooks] = useState<Notebook[]>(INITIAL_MY)
   const [featuredNotebooks] = useState<FeaturedNotebook[]>(INITIAL_FEATURED)
 
   // Delete confirmation
@@ -151,16 +144,31 @@ export function HomePage({ onCreateNotebook, onOpenNotebook }: HomePageProps) {
   const renderMyGridCard = (nb: Notebook) => (
     <div
       key={nb.id}
-      onClick={() => onOpenNotebook(nb.title)}
-      className="home-notebook-card group bg-card border border-border rounded-2xl p-4 flex flex-col cursor-pointer hover:bg-accent hover:border-accent transition-all duration-200 min-h-[180px] relative"
+      onClick={() => onOpenNotebook(nb.id)}
+      className={`home-notebook-card group border rounded-2xl p-4 flex flex-col cursor-pointer transition-all duration-200 min-h-[180px] relative justify-between ${
+        nb.cover 
+          ? "border-border/40 bg-cover bg-center shadow-sm" 
+          : "bg-card hover:bg-accent border-border"
+      }`}
+      style={nb.cover ? { backgroundImage: `url(${nb.cover})` } : undefined}
     >
-      <div className="flex items-start justify-between mb-auto">
-        <span className="material-symbols-outlined text-[28px] text-foreground">menu_book</span>
+      {nb.cover && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 pointer-events-none z-0 rounded-2xl" />
+      )}
+
+      <div className="flex items-start justify-between mb-auto relative z-10 w-full">
+        <span className={`material-symbols-outlined text-[28px] ${nb.cover ? "text-white" : "text-foreground"}`}>
+          menu_book
+        </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 transition-all cursor-pointer outline-none border-none bg-transparent"
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer outline-none border-none bg-transparent opacity-0 group-hover:opacity-100 ${
+                nb.cover 
+                  ? "text-white hover:bg-white/20" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              }`}
             >
               <span className="material-symbols-outlined text-[18px]">more_vert</span>
             </button>
@@ -188,11 +196,11 @@ export function HomePage({ onCreateNotebook, onOpenNotebook }: HomePageProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="mt-4">
-        <h3 className="text-[14px] font-semibold text-foreground leading-snug mb-1 font-sans line-clamp-2">
+      <div className="mt-4 relative z-10">
+        <h3 className={`text-[14px] font-semibold leading-snug mb-1 font-sans line-clamp-2 ${nb.cover ? "text-white" : "text-foreground"}`}>
           {nb.title}
         </h3>
-        <span className="text-[12px] text-muted-foreground font-medium font-sans">
+        <span className={`text-[12px] font-medium font-sans ${nb.cover ? "text-white/70" : "text-muted-foreground"}`}>
           {nb.date} · {nb.sources} sources
         </span>
       </div>
@@ -202,7 +210,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook }: HomePageProps) {
   const renderMyListRow = (nb: Notebook) => (
     <div
       key={nb.id}
-      onClick={() => onOpenNotebook(nb.title)}
+      onClick={() => onOpenNotebook(nb.id)}
       className="flex md:grid md:grid-cols-[1fr_120px_140px_100px_40px] items-center justify-between md:justify-start px-4 py-3 border-b border-border hover:bg-accent/50 cursor-pointer transition-colors group gap-2"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">

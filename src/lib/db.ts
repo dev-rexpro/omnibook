@@ -1,5 +1,5 @@
 const DB_NAME = "omnibook_db"
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export interface User {
   email: string
@@ -22,6 +22,9 @@ function initDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("sessions")) {
         db.createObjectStore("sessions", { keyPath: "id" })
+      }
+      if (!db.objectStoreNames.contains("notebooks")) {
+        db.createObjectStore("notebooks", { keyPath: "email" })
       }
     };
   })
@@ -207,3 +210,33 @@ export async function clearSession(): Promise<void> {
     request.onerror = () => reject(request.error)
   })
 }
+
+// ─── Notebook Persistence per User ───
+
+export async function getNotebooks(email: string): Promise<any[]> {
+  const db = await getDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction("notebooks", "readonly")
+    const store = transaction.objectStore("notebooks")
+    const request = store.get(email)
+
+    request.onsuccess = () => {
+      const record = request.result
+      resolve(record ? record.notebooks : [])
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+export async function saveNotebooks(email: string, notebooks: any[]): Promise<void> {
+  const db = await getDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction("notebooks", "readwrite")
+    const store = transaction.objectStore("notebooks")
+    const request = store.put({ email, notebooks })
+
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
