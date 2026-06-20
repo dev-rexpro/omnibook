@@ -75,6 +75,39 @@ export function LeftSidebar({
           Add sources
         </button>
 
+        {/* Search The Web Inputs */}
+        <div className="w-full bg-[#f9f9f9] dark:bg-zinc-900/50 border border-border rounded-[16px] p-2 flex flex-col gap-2 mb-6 transition-all focus-within:ring-1 focus-within:ring-ring focus-within:border-ring">
+          <div className="flex-1 relative pt-[2px] pb-[4px] px-[7px]">
+            <textarea
+              rows={1}
+              placeholder="Search the web for new sources"
+              className="w-full bg-transparent border-none outline-none text-[14px] text-foreground placeholder-muted-foreground font-sans resize-none h-8 leading-[20px] p-0 align-top"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <button
+                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
+              >
+                <span className="material-symbols-outlined text-[20px] text-zinc-500">language</span>
+                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+              </button>
+              <button
+                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
+              >
+                <span className="material-symbols-outlined text-[20px] text-zinc-500">search_spark</span>
+                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+              </button>
+            </div>
+            <button
+              className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none border-none"
+              disabled
+            >
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
+          </div>
+        </div>
+
         {/* Documents List */}
         {currentNotebook && documents.length > 0 && (
           <div className="w-full flex flex-col gap-2 mb-6">
@@ -256,6 +289,39 @@ export function LeftSidebar({
           <span className="material-symbols-outlined text-[18px]">add</span>
           Add sources
         </button>
+
+        {/* Search The Web Inputs */}
+        <div className="w-full bg-[#f9f9f9] dark:bg-zinc-900/50 border border-border rounded-[16px] p-2 flex flex-col gap-2 mb-6 transition-all focus-within:ring-1 focus-within:ring-ring focus-within:border-ring">
+          <div className="flex-1 relative pt-[2px] pb-[4px] px-[7px]">
+            <textarea
+              rows={1}
+              placeholder="Search the web for new sources"
+              className="w-full bg-transparent border-none outline-none text-[14px] text-foreground placeholder-muted-foreground resize-none h-8 leading-[20px] p-0 align-top"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <button
+                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
+              >
+                <span className="material-symbols-outlined text-[20px] text-zinc-500">language</span>
+                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+              </button>
+              <button
+                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
+              >
+                <span className="material-symbols-outlined text-[20px] text-zinc-500">search_spark</span>
+                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+              </button>
+            </div>
+            <button
+              className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none"
+              disabled
+            >
+              <span className="material-symbols-outlined text-[20px]">search</span>
+            </button>
+          </div>
+        </div>
 
         {/* Documents List */}
         {currentNotebook && documents.length > 0 && (
