@@ -9,12 +9,177 @@ import {
   Dialog as ShadcnDialog,
   DialogContent as ShadcnDialogContent,
 } from "@/components/ui/dialog"
+import type { Citation } from "@/store/useNotebookStore"
 
 interface Note {
   id: string
   title: string
   content: string
   createdAt: string
+  citations?: Citation[]
+}
+
+// ─── Custom Citation Badge Component with Hover Card ───
+const CitationBadge = ({ num, citations }: { num: number; citations?: Citation[] }) => {
+  const [isHovered, setIsHovered] = useState(false)
+  const citation = citations?.find(c => c.index === num)
+
+  if (!citation) {
+    return (
+      <span className="inline-flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-full w-4.5 h-4.5 text-[10px] font-bold mx-0.5 select-none align-middle -translate-y-[1px]">
+        {num}
+      </span>
+    )
+  }
+
+  return (
+    <span 
+      className="relative inline-block select-none text-left"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <span className="inline-flex items-center justify-center bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-full w-4.5 h-4.5 text-[10px] font-bold mx-0.5 cursor-pointer transition-colors select-none align-middle -translate-y-[1px]">
+        {num}
+      </span>
+
+      {isHovered && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-popover border border-border text-popover-foreground rounded-xl shadow-xl z-50 text-[12px] leading-relaxed flex flex-col gap-1.5 animate-slide-in pointer-events-none">
+          <span className="font-semibold text-foreground flex items-center gap-1.5 border-b border-border/50 pb-1">
+            <span className="material-symbols-outlined text-[14px] text-primary">description</span>
+            <span className="truncate max-w-[200px]">{citation.filename}</span>
+          </span>
+          <span className="text-muted-foreground italic font-normal line-clamp-4 select-text">
+            "{citation.content.trim()}"
+          </span>
+        </span>
+      )}
+    </span>
+  )
+}
+
+const parseCitations = (text: string, citations?: Citation[]): React.ReactNode => {
+  const citationRegex = /\[(\d+)\]/g
+  const parts = text.split(citationRegex)
+  if (parts.length === 1) return text
+
+  return parts.map((part, idx) => {
+    if (idx % 2 === 1) {
+      const citationNumber = parseInt(part, 10)
+      return <CitationBadge key={idx} num={citationNumber} citations={citations} />
+    }
+    return part
+  })
+}
+
+// ─── Premium Inline Markdown Formatter ───
+const parseInlineMarkdown = (text: string, citations?: Citation[]): React.ReactNode => {
+  // Split inline code blocks
+  const parts = text.split(/`([^`]+)`/)
+  return parts.map((part, index) => {
+    if (index % 2 === 1) {
+      return (
+        <code key={index} className="bg-muted px-1.5 py-0.5 rounded font-mono text-[13px] text-pink-600 dark:text-pink-400 font-semibold">
+          {part}
+        </code>
+      )
+    }
+    
+    // Parse bold **text**
+    const boldParts = part.split(/\*\*([^*]+)\*\*/)
+    return boldParts.map((bPart, bIdx) => {
+      if (bIdx % 2 === 1) {
+        return <strong key={bIdx} className="font-bold text-foreground">{bPart}</strong>
+      }
+      
+      // Parse italic *text*
+      const italicParts = bPart.split(/\*([^*]+)\*/)
+      return italicParts.map((iPart, iIdx) => {
+        if (iIdx % 2 === 1) {
+          return <em key={iIdx} className="italic">{iPart}</em>
+        }
+        return parseCitations(iPart, citations)
+      })
+    })
+  })
+}
+
+const formatParagraphs = (text: string, citations?: Citation[]): React.ReactNode[] => {
+  const paragraphs = text.split("\n\n")
+  return paragraphs.map((para, pIdx) => {
+    const trimmed = para.trim()
+    if (!trimmed) return null
+
+    // Markdown Headers
+    if (trimmed.startsWith("### ")) {
+      return <h3 key={pIdx} className="text-[15px] font-bold text-foreground mt-4 mb-2">{parseInlineMarkdown(trimmed.substring(4), citations)}</h3>
+    }
+    if (trimmed.startsWith("## ")) {
+      return <h2 key={pIdx} className="text-[17px] font-bold text-foreground mt-4 mb-2">{parseInlineMarkdown(trimmed.substring(3), citations)}</h2>
+    }
+    if (trimmed.startsWith("# ")) {
+      return <h1 key={pIdx} className="text-[19px] font-bold text-foreground mt-4 mb-2">{parseInlineMarkdown(trimmed.substring(2), citations)}</h1>
+    }
+
+    // Lists (bullets or numbers)
+    const lines = trimmed.split("\n")
+    const isList = lines.every(line => {
+      const l = line.trim()
+      return l.startsWith("•") || l.startsWith("-") || l.startsWith("*") || /^\d+\.\s/.test(l)
+    })
+
+    if (isList) {
+      return (
+        <ul key={pIdx} className="list-disc pl-5 flex flex-col gap-1.5 my-2">
+          {lines.map((line, lIdx) => {
+            const cleanLine = line.replace(/^([•\-*]|\d+\.)\s*/, "")
+            return <li key={lIdx}>{parseInlineMarkdown(cleanLine, citations)}</li>
+          })}
+        </ul>
+      )
+    }
+
+    return (
+      <p key={pIdx} className="mb-2.5 leading-relaxed text-[14px]">
+        {parseInlineMarkdown(para, citations)}
+      </p>
+    )
+  })
+}
+
+const formatMessageText = (text: string, citations?: Citation[]) => {
+  if (!text) return null
+
+  // Split block code fences
+  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g
+  const elements: React.ReactNode[] = []
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(text)) !== null) {
+    const precedingText = text.substring(lastIndex, match.index)
+    if (precedingText.trim()) {
+      elements.push(...formatParagraphs(precedingText, citations))
+    }
+
+    const language = match[1] || "code"
+    const codeContent = match[2]
+    elements.push(
+      <pre key={`code-${match.index}`} className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 p-4 rounded-xl font-mono text-[13px] my-3 overflow-x-auto shadow-inner border border-border/30 relative group">
+        <div className="absolute top-2 right-3 text-[10px] text-zinc-500 uppercase font-semibold select-none">
+          {language}
+        </div>
+        <code>{codeContent}</code>
+      </pre>
+    )
+    lastIndex = codeBlockRegex.lastIndex
+  }
+
+  const remainingText = text.substring(lastIndex)
+  if (remainingText.trim() || elements.length === 0) {
+    elements.push(...formatParagraphs(remainingText, citations))
+  }
+
+  return elements
 }
 
 interface RightSidebarProps {
@@ -97,8 +262,8 @@ export function RightSidebar({
                   <span className="material-symbols-outlined text-[18px]">delete</span>
                 </button>
               </div>
-              <div className="text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap font-sans">
-                {activeNote.content}
+              <div className="text-[13px] leading-relaxed text-foreground/90 font-sans flex flex-col gap-2.5">
+                {formatMessageText(activeNote.content, activeNote.citations)}
               </div>
             </div>
 
@@ -163,62 +328,75 @@ export function RightSidebar({
                     Notes
                   </div>
                   <div className="flex flex-col gap-2">
-                    {notes.map((note) => (
-                      <div
-                        key={note.id}
-                        onClick={() => onNoteSelect(note.id)}
-                        className="flex items-start justify-between p-4 rounded-2xl cursor-pointer text-foreground bg-card border border-border/50 hover:bg-accent transition-all duration-200"
-                      >
-                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                          <span className="material-symbols-outlined text-[20px] text-foreground/75 mt-0.5">
-                            description
-                          </span>
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[14px] font-semibold truncate leading-tight font-sans">
-                              {note.title}
+                    {notes.map((note) => {
+                      const isSelected = selectedNoteId === note.id
+                      return (
+                        <div
+                          key={note.id}
+                          onClick={() => onNoteSelect(note.id)}
+                          className={`w-full flex items-center justify-between p-3 border rounded-xl transition-all group cursor-pointer ${
+                            isSelected
+                              ? "bg-[#fcfcfc] dark:bg-zinc-900 border-slate-300 dark:border-zinc-800 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800/80"
+                              : "bg-slate-50/50 dark:bg-zinc-900/40 border-slate-200/50 dark:border-zinc-800/40 opacity-60 hover:opacity-85"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                              description
                             </span>
-                            <span className="text-[11px] text-muted-foreground font-medium font-sans">
-                              {note.createdAt}
-                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col gap-0.5 min-w-0">
+                                <span className="text-[13px] font-semibold text-foreground truncate block font-sans" title={note.title}>
+                                  {note.title}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground font-medium font-sans">
+                                  {note.createdAt}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="text-muted-foreground hover:text-foreground w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-accent border-none"
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                sideOffset={4}
+                                className="bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1 z-50 text-[13px] flex flex-col font-sans outline-none min-w-[160px] w-max whitespace-nowrap"
+                              >
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    console.log("Convert to source:", note.title)
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap font-sans"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">convert_to_text</span>
+                                  <span>Convert to source</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setNoteToDeleteId(note.id)
+                                  }}
+                                  className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive/80 font-medium whitespace-nowrap font-sans"
+                                >
+                                  <span className="material-symbols-outlined text-[16px] text-destructive">delete</span>
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition cursor-pointer outline-none border-none bg-transparent"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            sideOffset={4}
-                            className="w-[200px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
-                          >
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                console.log("Convert to source:", note.title)
-                              }}
-                              className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                            >
-                              <span>Convert to source</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setNoteToDeleteId(note.id)
-                              }}
-                              className="flex items-center gap-2 px-3 py-1.5 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
-                            >
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ) : (
@@ -297,7 +475,7 @@ export function RightSidebar({
       className={`sidebar flex-shrink-0 bg-sidebar text-sidebar-foreground border border-sidebar-border rounded-2xl flex flex-col relative shadow-sm overflow-hidden transition-all duration-300 ${
         isCollapsed ? "collapsed" : ""
       } ${
-        selectedNoteId !== null ? "w-[480px] lg:w-[500px]" : "w-[360px] lg:w-[370px]"
+        "w-[360px] lg:w-[370px]"
       }`}
     >
       {/* 1. NOTE DETAIL VIEW STATE */}
@@ -342,8 +520,8 @@ export function RightSidebar({
                 <span className="material-symbols-outlined text-[20px]">delete</span>
               </button>
             </div>
-            <div className="text-[13px] leading-relaxed text-foreground/90 whitespace-pre-wrap font-sans">
-              {activeNote.content}
+            <div className="text-[13px] leading-relaxed text-foreground/90 font-sans flex flex-col gap-2.5">
+              {formatMessageText(activeNote.content, activeNote.citations)}
             </div>
           </div>
 
@@ -382,7 +560,7 @@ export function RightSidebar({
           </div>
 
           {/* Expanded Scroll Body */}
-          <div className="sidebar-content w-[360px] lg:w-[370px] flex-1 overflow-y-auto flex flex-col pb-24">
+          <div className="sidebar-content w-full flex-1 overflow-y-auto flex flex-col pb-24">
             <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0">
               {STUDIO_ITEMS.map((item, index) => (
                 <div
@@ -421,99 +599,106 @@ export function RightSidebar({
                   Notes
                 </div>
                 <div className="flex flex-col gap-2">
-                  {notes.map((note) => (
-                    <div
-                      key={note.id}
-                      onClick={() => onNoteSelect(note.id)}
-                      className={`flex items-start justify-between p-4 rounded-2xl cursor-pointer text-foreground transition-all duration-200 select-none border border-transparent ${
-                        selectedNoteId === note.id
-                          ? "bg-zinc-100 dark:bg-zinc-800"
-                          : "bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <span className="material-symbols-outlined text-[20px] text-foreground/75 mt-0.5">
-                          description
-                        </span>
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                          <span className="text-[14px] font-semibold truncate leading-tight font-sans">
-                            {note.title}
+                  {notes.map((note) => {
+                    const isSelected = selectedNoteId === note.id
+                    return (
+                      <div
+                        key={note.id}
+                        onClick={() => onNoteSelect(note.id)}
+                        className={`w-full flex items-center justify-between p-2.5 border rounded-xl transition-all group cursor-pointer ${
+                          isSelected
+                            ? "bg-sidebar-accent/10 border-sidebar-border hover:bg-sidebar-accent/30"
+                            : "bg-sidebar-accent/5 border-sidebar-border/50 opacity-60 hover:opacity-85"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                            description
                           </span>
-                          <span className="text-[12px] text-muted-foreground font-medium font-sans">
-                            {note.createdAt}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="text-[13px] font-semibold text-sidebar-foreground truncate block font-sans" title={note.title}>
+                                {note.title}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground font-medium font-sans">
+                                {note.createdAt}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 text-sidebar-foreground/60 hover:text-foreground w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-sidebar-accent border-none"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              sideOffset={4}
+                              className="w-[260px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
+                            >
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  console.log("Convert to source:", note.title)
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                              >
+                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">convert_to_text</span>
+                                <span>Convert to source</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  console.log("Convert all notes to source")
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                              >
+                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">library_add</span>
+                                <span>Convert all notes to source</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  console.log("Export to Docs:", note.title)
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                              >
+                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">description</span>
+                                <span>Export to Docs</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  console.log("Export to Sheets:", note.title)
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                              >
+                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">table_view</span>
+                                <span>Export to Sheets</span>
+                              </DropdownMenuItem>
+                              <div className="h-px bg-border my-1" />
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setNoteToDeleteId(note.id)
+                                }}
+                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full hover:bg-accent/60 transition cursor-pointer outline-none border-none bg-transparent animate-none"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          sideOffset={4}
-                          className="w-[260px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
-                        >
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              console.log("Convert to source:", note.title)
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                          >
-                            <span className="material-symbols-outlined text-[18px] text-muted-foreground">convert_to_text</span>
-                            <span>Convert to source</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              console.log("Convert all notes to source")
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                          >
-                            <span className="material-symbols-outlined text-[18px] text-muted-foreground">library_add</span>
-                            <span>Convert all notes to source</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              console.log("Export to Docs:", note.title)
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                          >
-                            <span className="material-symbols-outlined text-[18px] text-muted-foreground">description</span>
-                            <span>Export to Docs</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              console.log("Export to Sheets:", note.title)
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                          >
-                            <span className="material-symbols-outlined text-[18px] text-muted-foreground">table_view</span>
-                            <span>Export to Sheets</span>
-                          </DropdownMenuItem>
-                          <div className="h-px bg-border my-1" />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setNoteToDeleteId(note.id)
-                            }}
-                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                            <span>Delete</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             ) : (

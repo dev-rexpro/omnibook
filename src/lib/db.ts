@@ -1,5 +1,5 @@
 const DB_NAME = "omnibook_db"
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export interface User {
   email: string
@@ -25,6 +25,9 @@ function initDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains("notebooks")) {
         db.createObjectStore("notebooks", { keyPath: "email" })
+      }
+      if (!db.objectStoreNames.contains("notebook_notes")) {
+        db.createObjectStore("notebook_notes", { keyPath: "notebookId" })
       }
     };
   })
@@ -239,4 +242,32 @@ export async function saveNotebooks(email: string, notebooks: any[]): Promise<vo
     request.onerror = () => reject(request.error)
   })
 }
+
+export async function getNotebookNotes(notebookId: string): Promise<any[]> {
+  const db = await getDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction("notebook_notes", "readonly")
+    const store = transaction.objectStore("notebook_notes")
+    const request = store.get(notebookId)
+
+    request.onsuccess = () => {
+      const record = request.result
+      resolve(record ? record.notes : [])
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+export async function saveNotebookNotes(notebookId: string, notes: any[]): Promise<void> {
+  const db = await getDB()
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction("notebook_notes", "readwrite")
+    const store = transaction.objectStore("notebook_notes")
+    const request = store.put({ notebookId, notes })
+
+    request.onsuccess = () => resolve()
+    request.onerror = () => reject(request.error)
+  })
+}
+
 

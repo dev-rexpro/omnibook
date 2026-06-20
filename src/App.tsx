@@ -14,7 +14,8 @@ import { HomePage } from "@/components/HomePage"
 import { AuthPage } from "@/components/AuthPage"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useTheme } from "@/components/theme-provider"
-import { getNotebooks, saveNotebooks } from "@/lib/db"
+import { useNotebookStore, type Citation } from "@/store/useNotebookStore"
+import { getNotebookNotes, saveNotebookNotes } from "@/lib/db"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -44,98 +45,106 @@ export function App() {
   const [currentPage, setCurrentPage] = useState<"home" | "notebook">("home")
   const [loadingTitle, setLoadingTitle] = useState<string | null>(null)
 
-  // Stateful personal notebooks list (persisted via IndexedDB per user)
-  const [myNotebooks, setMyNotebooks] = useState<any[]>([])
-  const [activeNotebookId, setActiveNotebookId] = useState<string | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  // Zustand Notebook Store integration
+  const {
+    notebooks,
+    currentNotebook,
+    loadNotebooks,
+    createNotebook,
+    deleteNotebook,
+    setCurrentNotebook,
+    updateNotebookTitle,
+    updateNotebookCover
+  } = useNotebookStore()
 
-  const [notebookTitle, setNotebookTitle] = useState("Untitled notebook")
-  const [notebookCover, setNotebookCover] = useState<string | null>(null)
-
-  // Load notebooks from IndexedDB when user is loaded
+  // Load notebooks when user session is initialized
   useEffect(() => {
-    setIsLoaded(false)
-    if (user?.email) {
-      getNotebooks(user.email).then((stored) => {
-        if (stored && stored.length > 0) {
-          setMyNotebooks(stored)
-          setIsLoaded(true)
-        } else {
-          // Check for localStorage migration fallback
-          const localStored = localStorage.getItem(`omnibook_notebooks_${user.email}`)
-          if (localStored) {
-            try {
-              const parsed = JSON.parse(localStored)
-              setMyNotebooks(parsed)
-              saveNotebooks(user.email, parsed).then(() => {
-                localStorage.removeItem(`omnibook_notebooks_${user.email}`)
-              })
-              setIsLoaded(true)
-              return
-            } catch (e) {
-              console.error("Failed to parse localStorage notebooks for migration:", e)
-            }
-          }
+    if (user) {
+      loadNotebooks()
+    }
+  }, [user, loadNotebooks])
 
-          // Default seed data
-          const initial: any[] = []
-          setMyNotebooks(initial)
-          saveNotebooks(user.email, initial).catch((err) => {
-            console.error("Failed to save initial notebooks:", err)
-          })
-          setIsLoaded(true)
-        }
-      }).catch((err) => {
-        console.error("Failed to load notebooks from IndexedDB:", err)
-        setIsLoaded(true)
-      })
+  const notebookTitle = currentNotebook?.title || "Untitled notebook"
+  const notebookCover = currentNotebook?.cover || null
+
+  // Local state for notes (persisted locally in IndexedDB keyed by notebook id)
+  const [notes, setNotes] = useState<any[]>([])
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
+
+  // Load notebook specific notes when active notebook switches
+  useEffect(() => {
+    if (currentNotebook?.id) {
+      getNotebookNotes(currentNotebook.id)
+        .then((storedNotes) => {
+          setNotes(storedNotes || [])
+        })
+        .catch((err) => {
+          console.error("Failed to load notebook notes:", err)
+          setNotes([])
+        })
     } else {
-      setMyNotebooks([])
-      setActiveNotebookId(null)
-      setNotebookTitle("Untitled notebook")
-      setNotebookCover(null)
       setNotes([])
-      setMessages([])
     }
-  }, [user?.email])
+    setSelectedNoteId(null)
+  }, [currentNotebook?.id])
 
-  // Save notebooks list back to IndexedDB on change (only after initial load has finished)
+  // Save notes back to IndexedDB on notes change
   useEffect(() => {
-    if (user?.email && isLoaded) {
-      saveNotebooks(user.email, myNotebooks).catch((err) => {
-        console.error("Failed to save notebooks to IndexedDB:", err)
+    if (currentNotebook?.id) {
+      saveNotebookNotes(currentNotebook.id, notes).catch((err) => {
+        console.error("Failed to save notebook notes to IndexedDB:", err)
       })
     }
-  }, [myNotebooks, user?.email, isLoaded])
+  }, [notes, currentNotebook?.id])
+
+  // HomePage component compatibility mapping
+  const myNotebooks = notebooks.map((nb) => ({
+    id: nb.id,
+    title: nb.title,
+    cover: nb.cover || null,
+    date: new Date(nb.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    sources: 0, // dynamic source counter loads once notebook is selected
+  }))
+
+  const setMyNotebooksWrapper = (updaterOrValue: any) => {
+    if (typeof updaterOrValue === "function") {
+      const dummyPrev = notebooks.map((n) => ({ id: n.id, title: n.title, cover: n.cover || null }))
+      const updated = updaterOrValue(dummyPrev)
+
+      // Handle delete notebook
+      if (updated.length < dummyPrev.length) {
+        const deletedId = dummyPrev.find((n) => !updated.some((u: any) => u.id === n.id))?.id
+        if (deletedId) {
+          deleteNotebook(deletedId)
+        }
+      }
+      // Handle title updates
+      else {
+        const edited = updated.find((u: any, idx: number) => u.title !== dummyPrev[idx]?.title)
+        if (edited) {
+          updateNotebookTitle(edited.id, edited.title)
+        }
+      }
+    }
+  }
 
   // Handlers for dynamic state sync
   const handleTitleChange = (newTitle: string) => {
-    setNotebookTitle(newTitle)
-    setMyNotebooks(prev =>
-      prev.map(nb => nb.id === activeNotebookId ? { ...nb, title: newTitle } : nb)
-    )
+    if (currentNotebook) {
+      updateNotebookTitle(currentNotebook.id, newTitle)
+    }
   }
 
   const handleCoverChange = (newCover: string | null) => {
-    setNotebookCover(newCover)
-    setMyNotebooks(prev =>
-      prev.map(nb => nb.id === activeNotebookId ? { ...nb, cover: newCover } : nb)
-    )
+    if (currentNotebook) {
+      updateNotebookCover(currentNotebook.id, newCover)
+    }
   }
 
-  // Load notebook specific notes and messages when switching notebooks
-  useEffect(() => {
-    if (activeNotebookId) {
-      const activeNb = myNotebooks.find(nb => nb.id === activeNotebookId)
-      if (activeNb) {
-        setNotes(activeNb.notes || [])
-        setMessages(activeNb.messages || [])
-      }
-    } else {
-      setNotes([])
-      setMessages([])
-    }
-  }, [activeNotebookId])
   const [isLeftCollapsed, setIsLeftCollapsed] = useState(false)
   const [isRightCollapsed, setIsRightCollapsed] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -146,74 +155,24 @@ export function App() {
   const [isNotebookDialogOpen, setIsNotebookDialogOpen] = useState(false)
   const [activeMobileTab, setActiveMobileTab] = useState<"sources" | "chat" | "studio">("sources")
 
-  // Chat messaging state (starts empty by default)
-  const [messages, setMessages] = useState<any[]>([])
-
-  const handleDeleteChatHistory = () => {
-    setMessages([])
-    setMyNotebooks(prev =>
-      prev.map(nb => nb.id === activeNotebookId ? { ...nb, messages: [] } : nb)
-    )
-  }
-
-  const handleSaveToNote = (queryText: string, responseText: string) => {
-    // Format the title from queryText
-    const cleanTitle = queryText.startsWith("Generate a ") 
+  const handleSaveToNote = (queryText: string, responseText: string, citations?: Citation[]) => {
+    const cleanTitle = queryText.startsWith("Generate a ")
       ? queryText.replace("Generate a ", "")
       : queryText.startsWith("Generate an ")
         ? queryText.replace("Generate an ", "")
-        : queryText;
-    
-    // Capitalize first letter
-    const title = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+        : queryText
+
+    const title = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1)
 
     const newNote = {
       id: `note-${Date.now()}`,
       title: title,
       content: responseText,
-      createdAt: "Just now"
+      createdAt: "Just now",
+      citations: citations || [],
     }
 
-    setNotes(prev => {
-      const updated = [...prev, newNote]
-      setMyNotebooks(prevNbs =>
-        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
-      )
-      return updated
-    })
-  }
-
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return
-
-    const newUserMsg = {
-      id: `user-${Date.now()}`,
-      sender: "user",
-      text: text.trim()
-    }
-
-    const newAiMsg = {
-      id: `ai-${Date.now()}`,
-      sender: "ai",
-      text: `I'd love to help you with that! To answer your request effectively, please upload some sources in the **Source Panel** on the left first. This will allow me to ground my answers in your own material.\n\nWhat subject or project are you working on today?`,
-      suggestedPrompts: [
-        "Where can I upload sources?",
-        "What file formats are supported?",
-        "How does NotebookLM work?"
-      ]
-    }
-
-    setMessages(prev => {
-      const updated = [...prev, newUserMsg, newAiMsg]
-      setMyNotebooks(prevNbs =>
-        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, messages: updated } : nb)
-      )
-      return updated
-    })
-  }
-
-  const handlePromptClick = (text: string) => {
-    handleSendMessage(text)
+    setNotes((prev) => [...prev, newNote])
   }
 
   const generateChatMock = (item: string) => {
@@ -222,71 +181,73 @@ export function App() {
     let prompts: string[] = []
 
     if (item === "Quiz") {
-      aiMsgText = "I'd love to help you create a quiz! To make it really effective and tailored to what you're studying, I first need some material to work with.\n\nNotebookLM is unique because it grounds everything in the **sources** you provide. Once you upload some content, I can generate a quiz that tests your knowledge on those specific details.\n\n**Here’s how to get started:**\n• **Upload your own:** Head over to the **Source Panel** on the left and add PDFs, Google Docs, website links, or even YouTube videos.\n• **Discover new ones:** If you don't have files handy, use the **\"Fast Research\"** or **\"Deep Research\"** options in the source panel to find information on the web.\n\nOnce your sources are in, just let me know, and I can generate a multiple-choice quiz or even flashcards in the **Studio Panel**!\n\nWhat subject are you currently working on? I can help you find some great sources to start with if you'd like!"
+      aiMsgText =
+        "I'd love to help you create a quiz! To make it really effective and tailored to what you're studying, I first need some material to work with.\n\nNotebookLM is unique because it grounds everything in the **sources** you provide. Once you upload some content, I can generate a quiz that tests your knowledge on those specific details.\n\n**Here’s how to get started:**\n• **Upload your own:** Head over to the **Source Panel** on the left and add PDFs, Google Docs, website links, or even YouTube videos.\n• **Discover new ones:** If you don't have files handy, use the **\"Fast Research\"** or **\"Deep Research\"** options in the source panel to find information on the web.\n\nOnce your sources are in, just let me know, and I can generate a multiple-choice quiz or even flashcards in the **Studio Panel**!\n\nWhat subject are you currently working on? I can help you find some great sources to start with if you'd like!"
       prompts = [
         "I am working on a history project.",
         "How do I use Fast Research to find sources?",
-        "Can you make a quiz from a YouTube video?"
+        "Can you make a quiz from a YouTube video?",
       ]
     } else if (item === "Audio Overview") {
-      aiMsgText = "I'd love to help you generate an Audio Overview! This will create a high-quality conversation between two virtual hosts discussing your documents.\n\n**Settings available:**\n• Choose language (English, Indonesian, etc.)\n• Audio length (Short, Medium, Long)\n• Host focus area\n\nOnce you customize the settings, click Generate in the dialog to start producing the podcast!"
+      aiMsgText =
+        "I'd love to help you generate an Audio Overview! This will create a high-quality conversation between two virtual hosts discussing your documents.\n\n**Settings available:**\n• Choose language (English, Indonesian, etc.)\n• Audio length (Short, Medium, Long)\n• Host focus area\n\nOnce you customize the settings, click Generate in the dialog to start producing the podcast!"
       prompts = [
         "Can I download the audio file?",
         "How long does audio generation take?",
-        "How do I customize the host focus?"
+        "How do I customize the host focus?",
       ]
     } else if (item === "Slide Deck") {
-      aiMsgText = "I'd love to help you build a Slide Deck! I will synthesize your sources into structured presentation slides with key topics and key takeaways.\n\n**Slide Deck format details:**\n• Slide outline based on active sources\n• Visual styling matching your custom covers\n• Slide notes ready for presenting\n\nTo begin, open the Customize Slide Deck dialog, select your presentation template, and click Generate!"
+      aiMsgText =
+        "I'd love to help you build a Slide Deck! I will synthesize your sources into structured presentation slides with key topics and key takeaways.\n\n**Slide Deck format details:**\n• Slide outline based on active sources\n• Visual styling matching your custom covers\n• Slide notes ready for presenting\n\nTo begin, open the Customize Slide Deck dialog, select your presentation template, and click Generate!"
       prompts = [
         "Can I export slides to Google Slides?",
         "How many slides can I generate?",
-        "What presentation templates are available?"
+        "What presentation templates are available?",
       ]
     } else if (item === "Infographic") {
-      aiMsgText = "I'd love to help you create an Infographic! I will compile your sources and design a beautiful format matching your selection.\n\nTo begin, ensure you have uploaded documents in the left panel, and then click Customize or Generate on the Infographic card."
+      aiMsgText =
+        "I'd love to help you create an Infographic! I will compile your sources and design a beautiful format matching your selection.\n\nTo begin, ensure you have uploaded documents in the left panel, and then click Customize or Generate on the Infographic card."
       prompts = [
         "What is the typical format of an Infographic?",
         "How do I select sources for this output?",
-        "Can I convert it to a source note?"
+        "Can I convert it to a source note?",
       ]
     } else if (item === "Data Table") {
-      aiMsgText = "I'd love to help you create a Data Table! I will extract facts, metrics, and comparisons from your sources and format them into a structured database.\n\nTo begin, ensure you have uploaded documents in the left panel, and click Generate."
+      aiMsgText =
+        "I'd love to help you create a Data Table! I will extract facts, metrics, and comparisons from your sources and format them into a structured database.\n\nTo begin, ensure you have uploaded documents in the left panel, and click Generate."
       prompts = [
         "What columns will the table have?",
         "Can I export the table to CSV?",
-        "How do I filter the data?"
+        "How do I filter the data?",
       ]
     } else {
       aiMsgText = `I'd love to help you create a ${item}! I will compile your sources and design a beautiful format matching your selection.\n\nTo begin, ensure you have uploaded documents in the left panel, and then click Customize or Generate on the ${item} card.`
       prompts = [
         `What is the typical format of a ${item}?`,
         "How do I select sources for this output?",
-        "Can I convert it to a source note?"
+        "Can I convert it to a source note?",
       ]
     }
 
+    const { addMessage } = useNotebookStore.getState()
+
     const newUserMsg = {
       id: `user-sidebar-${Date.now()}`,
-      sender: "user",
+      sender: "user" as const,
       text: userMsgText,
-      type: item.toLowerCase().replace(" ", "_")
+      type: item.toLowerCase().replace(" ", "_"),
     }
 
     const newAiMsg = {
       id: `ai-sidebar-${Date.now()}`,
-      sender: "ai",
+      sender: "ai" as const,
       text: aiMsgText,
       type: item.toLowerCase().replace(" ", "_"),
-      suggestedPrompts: prompts
+      suggestedPrompts: prompts,
     }
 
-    setMessages(prev => {
-      const updated = [...prev, newUserMsg, newAiMsg]
-      setMyNotebooks(prevNbs =>
-        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, messages: updated } : nb)
-      )
-      return updated
-    })
+    addMessage(newUserMsg)
+    addMessage(newAiMsg)
     setActiveMobileTab("chat")
   }
 
@@ -304,51 +265,36 @@ export function App() {
     }
   }
 
-  // Notes state (starts empty)
-  const [notes, setNotes] = useState<any[]>([])
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
-
   const handleAddNote = () => {
-    let newNote;
+    let newNote
     if (notes.length === 0) {
       newNote = {
         id: "note-1",
         title: "Initiating Your AI Video Synthesis Project",
-        content: "I'd love to help you create a video overview! To get started, I just need some source material to work with. Since your notebook is currently empty, the best first step is to upload some content in the source panel on the left.\n\nYou can upload:\n• PDFs or Google Docs\n• Website links or YouTube videos\n• Plain text snippets\n\nOnce you've added your sources, I can synthesize that information into a narrated slide presentation with AI-generated visuals. If you don't have files ready, I can even help you find",
-        createdAt: "37m ago"
+        content:
+          "I'd love to help you create a video overview! To get started, I just need some source material to work with. Since your notebook is currently empty, the best first step is to upload some content in the source panel on the left.\n\nYou can upload:\n• PDFs or Google Docs\n• Website links or YouTube videos\n• Plain text snippets\n\nOnce you've added your sources, I can synthesize that information into a narrated slide presentation with AI-generated visuals. If you don't have files ready, I can even help you find",
+        createdAt: "37m ago",
       }
     } else if (notes.length === 1) {
       newNote = {
         id: "note-2",
         title: "New Note",
         content: "Write your note content here...",
-        createdAt: "1h ago"
+        createdAt: "1h ago",
       }
     } else {
       newNote = {
         id: `note-${Date.now()}`,
         title: `New Note ${notes.length + 1}`,
         content: "Write your note content here...",
-        createdAt: "Just now"
+        createdAt: "Just now",
       }
     }
-    setNotes(prev => {
-      const updated = [...prev, newNote]
-      setMyNotebooks(prevNbs =>
-        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
-      )
-      return updated
-    })
+    setNotes((prev) => [...prev, newNote])
   }
 
   const handleDeleteNote = (id: string) => {
-    setNotes(prev => {
-      const updated = prev.filter(note => note.id !== id)
-      setMyNotebooks(prevNbs =>
-        prevNbs.map(nb => nb.id === activeNotebookId ? { ...nb, notes: updated } : nb)
-      )
-      return updated
-    })
+    setNotes((prev) => prev.filter((note) => note.id !== id))
     if (selectedNoteId === id) {
       setSelectedNoteId(null)
     }
@@ -357,62 +303,44 @@ export function App() {
   const startLoading = (title: string, destination: "home" | "notebook") => {
     setLoadingTitle(title)
     setTimeout(() => {
-      setNotebookTitle(title)
-      setNotes([])
       setSelectedNoteId(null)
       setCurrentPage(destination)
       setLoadingTitle(null)
-    }, 1200) // 1.2s delay for a premium feel load effect
+    }, 1200)
   }
 
-  const handleCreateNotebook = () => {
-    const newId = `nb-${Date.now()}`
-    const newNb = {
-      id: newId,
-      title: "Untitled notebook",
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      sources: 0,
-      cover: null
+  const handleCreateNotebook = async () => {
+    const newNb = await createNotebook()
+    if (newNb) {
+      setCurrentNotebook(newNb)
+      startLoading("Untitled notebook", "notebook")
     }
-    setMyNotebooks(prev => [newNb, ...prev])
-    setActiveNotebookId(newId)
-    setNotebookTitle("Untitled notebook")
-    setNotebookCover(null)
-    setMessages([])
-    startLoading("Untitled notebook", "notebook")
   }
 
   const handleOpenNotebook = (idOrTitle: string) => {
-    const nb = myNotebooks.find(n => n.id === idOrTitle || n.title === idOrTitle)
+    const nb = notebooks.find((n) => n.id === idOrTitle || n.title === idOrTitle)
     if (nb) {
-      setActiveNotebookId(nb.id)
-      setNotebookTitle(nb.title)
-      setNotebookCover(nb.cover || null)
-      setMessages([])
+      setCurrentNotebook(nb)
       startLoading(nb.title, "notebook")
     } else {
-      const existing = myNotebooks.find(n => n.title === idOrTitle)
+      const existing = notebooks.find((n) => n.title === idOrTitle)
       if (existing) {
-        setActiveNotebookId(existing.id)
-        setNotebookTitle(existing.title)
-        setNotebookCover(existing.cover || null)
-        setMessages([])
+        setCurrentNotebook(existing)
         startLoading(existing.title, "notebook")
       } else {
-        const newId = `nb-${Date.now()}`
-        const newNb = {
-          id: newId,
-          title: idOrTitle,
-          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-          sources: 0,
-          cover: null
-        }
-        setMyNotebooks(prev => [newNb, ...prev])
-        setActiveNotebookId(newId)
-        setNotebookTitle(idOrTitle)
-        setNotebookCover(null)
-        setMessages([])
-        startLoading(idOrTitle, "notebook")
+        createNotebook().then((newNb) => {
+          if (newNb) {
+            if (idOrTitle !== "Untitled notebook") {
+              updateNotebookTitle(newNb.id, idOrTitle).then(() => {
+                setCurrentNotebook({ ...newNb, title: idOrTitle })
+                startLoading(idOrTitle, "notebook")
+              })
+            } else {
+              setCurrentNotebook(newNb)
+              startLoading("Untitled notebook", "notebook")
+            }
+          }
+        })
       }
     }
   }
@@ -460,7 +388,7 @@ export function App() {
           onCreateNotebook={handleCreateNotebook}
           onOpenNotebook={handleOpenNotebook}
           myNotebooks={myNotebooks}
-          setMyNotebooks={setMyNotebooks}
+          setMyNotebooks={setMyNotebooksWrapper}
         />
       ) : (
         <div className="font-sans h-screen flex flex-col overflow-hidden relative bg-background text-foreground">
@@ -694,10 +622,6 @@ export function App() {
                   notebookCover={notebookCover}
                   onCustomizeClick={() => setIsNotebookDialogOpen(true)}
                   isMobile={true}
-                  messages={messages}
-                  onSendMessage={handleSendMessage}
-                  onPromptClick={handlePromptClick}
-                  onDeleteChatHistory={handleDeleteChatHistory}
                   onSaveToNote={handleSaveToNote}
                 />
               )}
@@ -740,10 +664,6 @@ export function App() {
               notebookTitle={notebookTitle}
               notebookCover={notebookCover}
               onCustomizeClick={() => setIsNotebookDialogOpen(true)}
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onPromptClick={handlePromptClick}
-              onDeleteChatHistory={handleDeleteChatHistory}
               onSaveToNote={handleSaveToNote}
             />
 
