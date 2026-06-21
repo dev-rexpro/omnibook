@@ -216,7 +216,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
               id="btnCloseModal"
               className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition z-30 cursor-pointer outline-none"
             >
-              <span className="material-symbols-outlined text-[24px]">close</span>
+              <span className="google-symbols text-[24px]">close</span>
             </button>
           </ShadcnDialogClose>
         )}
@@ -235,7 +235,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
         {errorMsg && (
           <div className="bg-destructive/10 text-destructive text-[13px] font-medium p-3.5 rounded-xl border border-destructive/20 flex flex-col gap-1 mb-4 relative z-10 select-text">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">error</span>
+              <span className="google-symbols text-[18px]">error</span>
               <span className="font-semibold">Ingestion Failed</span>
             </div>
             <p className="text-[12px] text-muted-foreground leading-normal mt-0.5">{errorMsg}</p>
@@ -271,23 +271,23 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   <button
                     className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2.5 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
                   >
-                    <span className="material-symbols-outlined text-[20px] text-zinc-500">language</span>
+                    <span className="google-symbols text-[20px] text-zinc-500">language</span>
                     <span className="text-[13px] hidden sm:inline">Web</span>
-                    <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                    <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
                   </button>
                   <button
                     className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2.5 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
                   >
-                    <span className="material-symbols-outlined text-[20px] text-zinc-500">search_spark</span>
+                    <span className="google-symbols text-[20px] text-zinc-500">search_spark</span>
                     <span className="text-[13px] hidden sm:inline">Fast Research</span>
-                    <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                    <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
                   </button>
                 </div>
                 <button
                   className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none border-none"
                   disabled
                 >
-                  <span className="material-symbols-outlined text-[20px]">search</span>
+                  <span className="google-symbols text-[20px]">search</span>
                 </button>
               </div>
             </div>
@@ -296,7 +296,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
             <div className="w-full bg-[#f8fafc]/50 dark:bg-zinc-900/10 sm:bg-accent border border-dashed border-slate-200 dark:border-zinc-800/80 sm:border-2 sm:border-border rounded-[28px] sm:rounded-2xl py-8 px-4 sm:py-12 sm:px-6 text-center flex flex-col items-center justify-center">
               <div className="mb-6">
                 <div className="flex items-center justify-center gap-2 sm:gap-1.5 text-foreground font-semibold tracking-tight text-[17px] sm:text-[23px] sm:leading-9">
-                  <span className="material-symbols-outlined text-[20px] sm:text-[24px] text-zinc-500 sm:text-muted-foreground select-none">
+                  <span className="google-symbols text-[20px] sm:text-[24px] text-zinc-500 sm:text-muted-foreground select-none">
                     upload
                   </span>
                   <span>or add your files</span>
@@ -312,7 +312,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   onClick={() => document.getElementById("pdf-upload")?.click()}
                   className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
                 >
-                  <span className="material-symbols-outlined text-[19px] sm:text-[18px]">upload</span> Upload files
+                  <span className="google-symbols text-[19px] sm:text-[18px]">upload</span> Upload files
                 </button>
 
                 {/* Websites Button */}
@@ -321,7 +321,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
                 >
                   <span className="flex items-center gap-1.5 justify-center">
-                    <span className="material-symbols-outlined text-[19px] sm:text-[18px]">link</span>
+                    <span className="google-symbols text-[19px] sm:text-[18px]">link</span>
                     <svg viewBox="0 0 24 24" className="w-[18px] h-[18px] fill-[#FF0000] flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
                       <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.508 9.388.508 9.388.508s7.517 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837z" />
                       <polygon points="9.545 15.568 15.818 12 9.545 8.432" fill="#FFFFFF" />
@@ -347,7 +347,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   onClick={() => setCurrentView("copied_text")}
                   className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
                 >
-                  <span className="material-symbols-outlined text-[19px] sm:text-[18px]">content_paste</span> Copied text
+                  <span className="google-symbols text-[19px] sm:text-[18px]">content_paste</span> Copied text
                 </button>
               </div>
             </div>
@@ -365,7 +365,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none"
                   disabled={localIngesting}
                 >
-                  <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+                  <span className="google-symbols text-[24px]">arrow_back</span>
                 </button>
                 <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
                   Website and YouTube URLs
@@ -373,7 +373,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
               </div>
               <ShadcnDialogClose asChild disabled={localIngesting}>
                 <button className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none">
-                  <span className="material-symbols-outlined text-[24px]">close</span>
+                  <span className="google-symbols text-[24px]">close</span>
                 </button>
               </ShadcnDialogClose>
             </div>
@@ -438,7 +438,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none"
                   disabled={localIngesting}
                 >
-                  <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+                  <span className="google-symbols text-[24px]">arrow_back</span>
                 </button>
                 <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
                   Paste copied text
@@ -446,7 +446,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
               </div>
               <ShadcnDialogClose asChild disabled={localIngesting}>
                 <button className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none">
-                  <span className="material-symbols-outlined text-[24px]">close</span>
+                  <span className="google-symbols text-[24px]">close</span>
                 </button>
               </ShadcnDialogClose>
             </div>
@@ -492,8 +492,8 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-emerald-500 border-r-emerald-500 animate-spin" />
                 <div className="w-9 h-9 rounded-full bg-emerald-500/10 dark:bg-emerald-400/10 flex items-center justify-center animate-pulse">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-500 dark:text-emerald-400">
-                    description
+                  <span className="google-symbols text-[18px] text-emerald-500 dark:text-emerald-400">
+                    drive_pdf
                   </span>
                 </div>
               </div>
@@ -525,7 +525,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
 
         {toast && (
           <div className="fixed bottom-6 right-6 z-50 animate-fade-in bg-zinc-900/95 dark:bg-zinc-100/95 backdrop-blur-md text-white dark:text-zinc-900 px-4 py-3.5 rounded-2xl shadow-2xl flex items-start gap-3 border border-white/10 dark:border-black/10 select-text max-w-sm">
-            <span className="material-symbols-outlined text-[20px] text-amber-500 mt-0.5">warning</span>
+            <span className="google-symbols text-[20px] text-amber-500 mt-0.5">warning</span>
             <div className="flex flex-col gap-0.5">
               <span className="text-[13px] font-bold tracking-tight">File limit exceeded</span>
               <span className="text-[12px] opacity-80 leading-normal">{toast.message}</span>

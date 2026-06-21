@@ -154,7 +154,7 @@ export function AuthPage() {
 
             {(formError || storeError) && (
               <div className="bg-destructive/10 text-destructive text-[12px] font-medium px-3 py-2 rounded-lg border border-destructive/20 flex items-center gap-2 animate-pulse">
-                <span className="material-symbols-outlined text-[16px]">error</span>
+                <span className="google-symbols text-[16px]">error</span>
                 <span>{formError || storeError}</span>
               </div>
             )}
@@ -203,7 +203,7 @@ export function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2.5 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer border-none bg-transparent outline-none p-0 transition"
                   >
-                    <span className="material-symbols-outlined text-[18px] select-none">
+                    <span className="google-symbols text-[18px] select-none">
                       {showPassword ? "visibility" : "visibility_off"}
                     </span>
                   </button>
@@ -217,12 +217,12 @@ export function AuthPage() {
               >
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                    <span className="google-symbols text-[16px] animate-spin">sync</span>
                     Signing In...
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[16px]">login</span>
+                    <span className="google-symbols text-[16px]">login</span>
                     Sign in
                   </>
                 )}
@@ -262,7 +262,7 @@ export function AuthPage() {
 
             {formError && (
               <div className="bg-destructive/10 text-destructive text-[12px] font-medium px-3 py-2 rounded-lg border border-destructive/20 flex items-center gap-2 animate-pulse">
-                <span className="material-symbols-outlined text-[16px]">error</span>
+                <span className="google-symbols text-[16px]">error</span>
                 <span>{formError}</span>
               </div>
             )}
@@ -317,7 +317,7 @@ export function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2.5 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer border-none bg-transparent outline-none p-0 transition"
                   >
-                    <span className="material-symbols-outlined text-[18px] select-none">
+                    <span className="google-symbols text-[18px] select-none">
                       {showPassword ? "visibility" : "visibility_off"}
                     </span>
                   </button>
@@ -343,7 +343,7 @@ export function AuthPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-2.5 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer border-none bg-transparent outline-none p-0 transition"
                   >
-                    <span className="material-symbols-outlined text-[18px] select-none">
+                    <span className="google-symbols text-[18px] select-none">
                       {showConfirmPassword ? "visibility" : "visibility_off"}
                     </span>
                   </button>
@@ -357,7 +357,7 @@ export function AuthPage() {
               >
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                    <span className="google-symbols text-[16px] animate-spin">sync</span>
                     Creating Account...
                   </>
                 ) : (
@@ -382,7 +382,7 @@ export function AuthPage() {
 
             {formError && (
               <div className="bg-destructive/10 text-destructive text-[12px] font-medium px-3 py-2 rounded-lg border border-destructive/20 flex items-center gap-2 animate-pulse">
-                <span className="material-symbols-outlined text-[16px]">error</span>
+                <span className="google-symbols text-[16px]">error</span>
                 <span>{formError}</span>
               </div>
             )}
@@ -390,7 +390,7 @@ export function AuthPage() {
             {formSuccess && (
               <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[12px] font-medium px-3 py-2.5 rounded-lg border border-emerald-500/20 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span className="google-symbols text-[16px]">check_circle</span>
                   <span>Reset link sent!</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 leading-normal">{formSuccess}</p>
@@ -418,7 +418,7 @@ export function AuthPage() {
                 className="inline-flex items-center justify-center rounded-md text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950 hover:opacity-90 active:scale-[0.98] h-9 px-4 py-2 border-none cursor-pointer outline-none mt-2 shadow-sm w-full gap-1.5 font-sans"
               >
                 Continue
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                <span className="google-symbols text-[16px]">arrow_forward</span>
               </button>
             </form>
 
@@ -515,7 +515,7 @@ export function AuthPage() {
               onClick={() => setShowGoogleMock(false)}
               className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer border-none bg-transparent outline-none transition"
             >
-              <span className="material-symbols-outlined text-[16px]">close</span>
+              <span className="google-symbols text-[16px]">close</span>
             </button>
 
             {/* Google Brand Header */}

@@ -157,7 +157,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
       )}
 
       <div className="flex items-start justify-between mb-auto relative z-10 w-full">
-        <span className={`material-symbols-outlined text-[28px] ${nb.cover ? "text-white" : "text-foreground"}`}>
+        <span className={`google-symbols text-[28px] ${nb.cover ? "text-white" : "text-foreground"}`}>
           menu_book
         </span>
         <DropdownMenu>
@@ -170,7 +170,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              <span className="material-symbols-outlined text-[18px]">more_vert</span>
+              <span className="google-symbols text-[18px]">more_vert</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -182,7 +182,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
               onClick={(e) => { e.stopPropagation(); handleStartEdit(nb) }}
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
             >
-              <span className="material-symbols-outlined text-[18px] text-muted-foreground">edit</span>
+              <span className="google-symbols text-[18px] text-muted-foreground">edit</span>
               <span>Edit title</span>
             </DropdownMenuItem>
             <div className="h-px bg-border my-1" />
@@ -190,7 +190,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
               onClick={(e) => { e.stopPropagation(); setDeleteTargetId(nb.id) }}
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
             >
-              <span className="material-symbols-outlined text-[18px]">delete</span>
+              <span className="google-symbols text-[18px]">delete</span>
               <span>Delete</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -214,7 +214,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
       className="flex md:grid md:grid-cols-[1fr_120px_140px_100px_40px] items-center justify-between md:justify-start px-4 py-3 border-b border-border hover:bg-accent/50 cursor-pointer transition-colors group gap-2"
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <span className="material-symbols-outlined text-[22px] text-foreground flex-shrink-0">menu_book</span>
+        <span className="google-symbols text-[22px] text-foreground flex-shrink-0">menu_book</span>
         <div className="flex flex-col min-w-0">
           <span className="text-[14px] font-medium text-foreground truncate font-sans">
             {nb.title}
@@ -233,7 +233,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
             onClick={(e) => e.stopPropagation()}
             className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all cursor-pointer outline-none border-none bg-transparent flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[18px]">more_vert</span>
+            <span className="google-symbols text-[18px]">more_vert</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -245,7 +245,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
             onClick={(e) => { e.stopPropagation(); handleStartEdit(nb) }}
             className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
           >
-            <span className="material-symbols-outlined text-[18px] text-muted-foreground">edit</span>
+            <span className="google-symbols text-[18px] text-muted-foreground">edit</span>
             <span>Edit title</span>
           </DropdownMenuItem>
           <div className="h-px bg-border my-1" />
@@ -253,7 +253,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
             onClick={(e) => { e.stopPropagation(); setDeleteTargetId(nb.id) }}
             className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
           >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
+            <span className="google-symbols text-[18px]">delete</span>
             <span>Delete</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -285,7 +285,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
       </div>
       <span className="hidden md:inline text-[13px] text-foreground font-sans">{nb.sources} Sources</span>
       <span className="hidden md:inline text-[13px] text-foreground font-sans">{nb.date}</span>
-      <span className="hidden md:inline material-symbols-outlined text-[18px] text-muted-foreground">language</span>
+      <span className="hidden md:inline google-symbols text-[18px] text-muted-foreground">language</span>
       <span className="hidden md:inline text-[13px] text-foreground font-sans">Reader</span>
       <span className="w-7 h-7 flex-shrink-0 md:inline"></span>
     </div>
@@ -325,7 +325,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
               <button
                 className="w-8 h-8 md:w-auto md:h-[34px] md:px-[14px] md:border md:border-border bg-transparent md:bg-background text-muted-foreground md:text-foreground rounded-full flex items-center justify-center md:justify-start gap-1.5 text-[13px] font-medium hover:text-foreground md:hover:bg-accent md:hover:text-accent-foreground active:scale-[0.98] transition-all md:shadow-sm cursor-pointer outline-none border-none md:border-solid"
               >
-                <span className="material-symbols-outlined text-[20px] md:text-[18px]">settings</span>
+                <span className="google-symbols text-[20px] md:text-[18px]">settings</span>
                 <span className="hidden md:inline">Settings</span>
               </button>
             </DropdownMenuTrigger>
@@ -341,10 +341,10 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">tonality</span>
+                      <span className="google-symbols text-[16px]">tonality</span>
                       <span>Switch Theme</span>
                     </div>
-                    <span className="material-symbols-outlined text-[16px] text-muted-foreground">chevron_right</span>
+                    <span className="google-symbols text-[16px] text-muted-foreground">chevron_right</span>
                   </button>
                 </div>
               ) : (
@@ -353,7 +353,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     onClick={(e) => { e.stopPropagation(); setMenuView("main") }}
                     className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    <span className="google-symbols text-[16px]">arrow_back</span>
                     <span className="font-medium">Back</span>
                   </button>
                   {(["light", "dark", "system"] as const).map((t) => (
@@ -363,13 +363,13 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                       onClick={() => { setTheme(t); setDropdownOpen(false) }}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[16px]">
+                        <span className="google-symbols text-[16px]">
                           {t === "light" ? "light_mode" : t === "dark" ? "dark_mode" : "desktop_windows"}
                         </span>
                         <span className="capitalize">{t}</span>
                       </div>
                       {theme === t && (
-                        <span className="material-symbols-outlined text-[16px] text-foreground">check</span>
+                        <span className="google-symbols text-[16px] text-foreground">check</span>
                       )}
                     </button>
                   ))}
@@ -402,7 +402,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                 onClick={() => signOut()}
                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans border-none bg-transparent text-[13px]"
               >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <span className="google-symbols text-[16px]">logout</span>
                 <span>Sign Out</span>
               </button>
             </DropdownMenuContent>
@@ -440,7 +440,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
             {/* Right: Actions */}
             <div className="flex items-center gap-2 flex-wrap">
               <button className="w-[36px] h-[36px] rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none bg-background">
-                <span className="material-symbols-outlined text-[20px]">search</span>
+                <span className="google-symbols text-[20px]">search</span>
               </button>
               <div className="flex items-center border border-border rounded-full overflow-hidden bg-background">
                 <button
@@ -449,7 +449,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     viewMode === "grid" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">grid_view</span>
+                  <span className="google-symbols text-[18px]">grid_view</span>
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
@@ -457,18 +457,18 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">view_list</span>
+                  <span className="google-symbols text-[18px]">view_list</span>
                 </button>
               </div>
               <button className="h-[36px] px-[14px] border border-border bg-background text-foreground rounded-full flex items-center gap-1 text-[13px] font-medium hover:bg-accent transition cursor-pointer outline-none">
                 Most recent
-                <span className="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+                <span className="google-symbols text-[16px]">arrow_drop_down</span>
               </button>
               <button
                 onClick={onCreateNotebook}
                 className="h-[36px] px-[18px] bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950 rounded-full flex items-center gap-1.5 text-[13px] font-semibold hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer outline-none border-none font-sans shadow-sm"
               >
-                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span className="google-symbols text-[18px]">add</span>
                 Create new
               </button>
             </div>
@@ -489,7 +489,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     <div className="flex justify-end mb-4 mt-3">
                       <button className="h-[34px] px-[16px] border border-border bg-background text-foreground rounded-full flex items-center gap-1 text-[13px] font-medium hover:bg-accent transition cursor-pointer outline-none font-sans">
                         See all
-                        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                        <span className="google-symbols text-[16px]">chevron_right</span>
                       </button>
                     </div>
                   )}
@@ -507,7 +507,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                       className="home-notebook-card group bg-card border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent hover:border-accent transition-all duration-200 min-h-[180px]"
                     >
                       <div className="w-[44px] h-[44px] rounded-full bg-muted flex items-center justify-center mb-3 group-hover:bg-background transition-colors">
-                        <span className="material-symbols-outlined text-[24px] text-muted-foreground group-hover:text-foreground transition-colors">
+                        <span className="google-symbols text-[24px] text-muted-foreground group-hover:text-foreground transition-colors">
                           add
                         </span>
                       </div>
@@ -561,7 +561,7 @@ export function HomePage({ onCreateNotebook, onOpenNotebook, myNotebooks, setMyN
                     <div className="flex justify-end mb-4 mt-3">
                       <button className="h-[34px] px-[16px] border border-border bg-background text-foreground rounded-full flex items-center gap-1 text-[13px] font-medium hover:bg-accent transition cursor-pointer outline-none font-sans">
                         See all
-                        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                        <span className="google-symbols text-[16px]">chevron_right</span>
                       </button>
                     </div>
                   )}

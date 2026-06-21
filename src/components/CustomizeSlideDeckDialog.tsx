@@ -80,7 +80,7 @@ export function CustomizeSlideDeckDialog({
         {/* Header */}
         <div className="flex items-center justify-between pb-6 border-b border-border relative z-10">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[24px] text-foreground">
+            <span className="google-symbols text-[24px] text-foreground">
               tablet
             </span>
             <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
@@ -89,7 +89,7 @@ export function CustomizeSlideDeckDialog({
           </div>
           <ShadcnDialogClose asChild>
             <button className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none">
-              <span className="material-symbols-outlined text-[24px]">close</span>
+              <span className="google-symbols text-[24px]">close</span>
             </button>
           </ShadcnDialogClose>
         </div>
@@ -119,7 +119,7 @@ export function CustomizeSlideDeckDialog({
                         {option.label}
                       </span>
                       {isActive && (
-                        <span className="material-symbols-outlined text-[18px] text-primary">
+                        <span className="google-symbols text-[18px] text-primary">
                           check
                         </span>
                       )}
@@ -144,7 +144,7 @@ export function CustomizeSlideDeckDialog({
                 <DropdownMenuTrigger asChild>
                   <button className="h-[44px] px-4 border border-border bg-card text-foreground rounded-xl flex items-center justify-between text-[14px] font-medium hover:bg-accent/50 active:scale-[0.99] transition shadow-xs cursor-pointer outline-none w-full">
                     <span>{selectedLanguage}</span>
-                    <span className="material-symbols-outlined text-[20px] text-muted-foreground">
+                    <span className="google-symbols text-[20px] text-muted-foreground">
                       keyboard_arrow_down
                     </span>
                   </button>
@@ -162,7 +162,7 @@ export function CustomizeSlideDeckDialog({
                     >
                       <span>{lang}</span>
                       {selectedLanguage === lang && (
-                        <span className="material-symbols-outlined text-[16px] text-primary">
+                        <span className="google-symbols text-[16px] text-primary">
                           check
                         </span>
                       )}

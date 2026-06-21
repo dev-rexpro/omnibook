@@ -36,7 +36,9 @@ const CitationBadge = ({ num, citations }: { num: number; citations?: Citation[]
       {isHovered && (
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-popover border border-border text-popover-foreground rounded-xl shadow-xl z-50 text-[12px] leading-relaxed flex flex-col gap-1.5 animate-slide-in pointer-events-none">
           <span className="font-semibold text-foreground flex items-center gap-1.5 border-b border-border/50 pb-1">
-            <span className="material-symbols-outlined text-[14px] text-primary">description</span>
+            <span className="google-symbols text-[14px] text-primary">
+              {citation.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
+            </span>
             <span className="truncate max-w-[200px]">{citation.filename}</span>
           </span>
           <span className="text-muted-foreground italic font-normal line-clamp-4 select-text">
@@ -239,7 +241,7 @@ export function ChatPanel({
     }
   }, [chatHistory, chatStartedAt])
 
-  const streamChat = async (queryText: string, queryEmbedding: number[]) => {
+  const streamChat = async (queryText: string) => {
     const aiMsgId = `ai-${Date.now()}`
     
     // Add empty AI placeholder message
@@ -256,19 +258,17 @@ export function ChatPanel({
         throw new Error("You must be logged in to chat with your documents.")
       }
 
-      // POST query & vector embedding to Edge Function
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chat`,
+        `${backendUrl}/chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
-            "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
           body: JSON.stringify({
             query: queryText,
-            query_embedding: queryEmbedding,
             model_config: modelConfig,
             notebook_id: currentNotebook?.id,
             document_ids: selectedDocumentIds,
@@ -509,45 +509,7 @@ export function ChatPanel({
         return
       }
 
-      // Create Web Worker for query embedding computation
-      const worker = new Worker(
-        new URL("../workers/embedding.worker.ts", import.meta.url),
-        { type: "module" }
-      )
-
-      worker.postMessage({
-        type: "embed_query",
-        query: text.trim(),
-      })
-
-      worker.onmessage = async (event) => {
-        const data = event.data
-        if (data.type === "query_embedding_success") {
-          worker.terminate()
-          await streamChat(text.trim(), data.embedding)
-        } else if (data.type === "error" || data.type === "ERROR") {
-          worker.terminate()
-          setIsProcessing(false)
-          
-          const errMsg = data.message || data.error || "Web Worker error"
-          addMessage({
-            id: `ai-err-${Date.now()}`,
-            sender: "ai",
-            text: `Failed to initialize search: ${errMsg}`,
-          })
-        }
-      }
-
-      worker.onerror = (err) => {
-        console.error("Worker error during query embedding:", err)
-        worker.terminate()
-        setIsProcessing(false)
-        addMessage({
-          id: `ai-err-${Date.now()}`,
-          sender: "ai",
-          text: "Failed to compute embedding using the Web Worker.",
-        })
-      }
+      await streamChat(text.trim())
 
     } catch (err: any) {
       console.error(err)
@@ -594,7 +556,7 @@ export function ChatPanel({
           }}
           className="bg-background border border-border text-foreground h-9 px-4 rounded-full flex items-center gap-1.5 hover:bg-accent text-[13px] font-medium transition shadow-xs cursor-pointer active:scale-[0.98] outline-none"
         >
-          <span className="material-symbols-outlined text-[20px]">keep</span>
+          <span className="google-symbols text-[20px]">keep</span>
           <span>Save to note</span>
         </button>
         <button
@@ -605,13 +567,13 @@ export function ChatPanel({
           }}
           className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none"
         >
-          <span className="material-symbols-outlined text-[20px]">copy_all</span>
+          <span className="google-symbols text-[20px]">copy_all</span>
         </button>
         <button className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none">
-          <span className="material-symbols-outlined text-[20px]">thumb_up</span>
+          <span className="google-symbols text-[20px]">thumb_up</span>
         </button>
         <button className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none">
-          <span className="material-symbols-outlined text-[20px]">thumb_down</span>
+          <span className="google-symbols text-[20px]">thumb_down</span>
         </button>
       </div>
 
@@ -689,17 +651,25 @@ export function ChatPanel({
                   }}
                   className="bg-background border border-border text-foreground h-9 px-4 rounded-full flex items-center gap-1.5 hover:bg-accent text-[13px] font-medium transition shadow-xs cursor-pointer active:scale-[0.98] outline-none"
                 >
-                  <span className="material-symbols-outlined text-[20px]">keep</span>
+                  <span className="google-symbols text-[20px]">keep</span>
                   <span>Save to note</span>
                 </button>
-                <button className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none">
-                  <span className="material-symbols-outlined text-[20px]">copy_all</span>
+                <button
+                  onClick={() => {
+                    if (msg.text) {
+                      navigator.clipboard.writeText(msg.text)
+                    }
+                  }}
+                  className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none"
+                  title="Copy response"
+                >
+                  <span className="google-symbols text-[20px]">copy_all</span>
                 </button>
                 <button className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none">
-                  <span className="material-symbols-outlined text-[20px]">thumb_up</span>
+                  <span className="google-symbols text-[20px]">thumb_up</span>
                 </button>
                 <button className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none active:scale-[0.98] border-none">
-                  <span className="material-symbols-outlined text-[20px]">thumb_down</span>
+                  <span className="google-symbols text-[20px]">thumb_down</span>
                 </button>
               </div>
             )}
@@ -736,7 +706,7 @@ export function ChatPanel({
             <DropdownMenuTrigger asChild>
               <button className="h-7 px-2.5 rounded-full border border-border bg-background text-foreground text-[11px] font-medium flex items-center gap-1 hover:bg-accent active:scale-[0.98] transition cursor-pointer outline-none select-none whitespace-nowrap">
                 <span>{MODELS.find(m => m.id === modelConfig.model_name)?.label ?? modelConfig.model_name}</span>
-                <span className="material-symbols-outlined text-[13px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[13px] text-zinc-400">keyboard_arrow_down</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="bg-popover border border-border rounded-lg shadow-lg py-1 z-50 text-[13px] flex flex-col font-sans outline-none min-w-[160px] w-max">
@@ -747,7 +717,7 @@ export function ChatPanel({
                   className="flex items-center justify-between gap-4 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap"
                 >
                   <span>{m.label}</span>
-                  {modelConfig.model_name === m.id && <span className="material-symbols-outlined text-[14px]">check</span>}
+                  {modelConfig.model_name === m.id && <span className="google-symbols text-[14px]">check</span>}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -758,7 +728,7 @@ export function ChatPanel({
               <button
                 className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition cursor-pointer outline-none bg-transparent border-none"
               >
-                <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                <span className="google-symbols text-[20px]">more_vert</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -786,7 +756,7 @@ export function ChatPanel({
         <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-start">
           {/* Notebook Cover Card */}
           <div 
-            className={`w-full max-w-[640px] mx-auto mt-4 mb-8 relative rounded-2xl min-h-[180px] overflow-hidden group border transition-all duration-300 flex flex-col justify-between ${
+            className={`w-full max-w-[640px] mx-auto mt-4 mb-8 relative rounded-2xl min-h-[180px] flex-shrink-0 overflow-hidden group border transition-all duration-300 flex flex-col ${
               notebookCover 
                 ? "border-border/40 bg-cover bg-center shadow-md" 
                 : "bg-card hover:bg-accent border-transparent"
@@ -797,11 +767,11 @@ export function ChatPanel({
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/15 pointer-events-none z-0" />
             )}
 
-            <div className="p-6 flex flex-col relative z-10 flex-1 justify-between">
+            <div className="p-6 flex flex-col relative z-10 min-h-[178px] justify-between">
               <div className="flex justify-between items-start w-full">
                 {!notebookCover && (
                   <div className="cursor-pointer hover:scale-105 transition-transform w-max">
-                    <span className="material-symbols-outlined text-[32px] text-foreground">
+                    <span className="google-symbols text-[32px] text-foreground">
                       menu_book
                     </span>
                   </div>
@@ -815,14 +785,14 @@ export function ChatPanel({
                         : "bg-background/60 border-border text-foreground hover:bg-accent hover:text-accent-foreground"
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+                    <span className="google-symbols text-[16px]">photo_spark</span>
                     Customize
                   </button>
                 </div>
               </div>
 
               <div className="mt-6">
-                <h1 className={`text-[29px] font-bold tracking-tight mb-1 leading-tight ${notebookCover ? "text-white" : "text-foreground"}`}>
+                <h1 className={`text-[22px] sm:text-[26px] md:text-[28px] font-bold tracking-tight mb-1 leading-tight ${notebookCover ? "text-white" : "text-foreground"}`}>
                   {notebookTitle}
                 </h1>
                 <div className={`flex items-center gap-1.5 text-[13px] font-medium ${notebookCover ? "text-white/70" : "text-muted-foreground"}`}>
@@ -858,7 +828,7 @@ export function ChatPanel({
             </div>
             <div className="flex flex-row items-center flex-shrink-0 gap-3 align-self-end">
               <div className="flex items-center gap-1 text-[13px] text-muted-foreground font-medium px-1 select-none">
-                <span className="material-symbols-outlined text-[18px]">description</span>
+                <span className="google-symbols text-[18px]">description</span>
                 <span>({selectedDocumentIds.length})</span>
               </div>
               <button
@@ -872,9 +842,9 @@ export function ChatPanel({
                 }`}
               >
                 {isProcessing ? (
-                  <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                  <span className="google-symbols text-[20px] animate-spin">sync</span>
                 ) : (
-                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  <span className="google-symbols text-[20px]">arrow_forward</span>
                 )}
               </button>
             </div>
@@ -899,7 +869,7 @@ export function ChatPanel({
             <DropdownMenuTrigger asChild>
               <button className="h-7 px-2.5 rounded-full border border-border bg-background text-foreground text-[11px] font-medium flex items-center gap-1 hover:bg-accent active:scale-[0.98] transition cursor-pointer outline-none select-none whitespace-nowrap">
                 <span>{MODELS.find(m => m.id === modelConfig.model_name)?.label ?? modelConfig.model_name}</span>
-                <span className="material-symbols-outlined text-[14px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[14px] text-zinc-400">keyboard_arrow_down</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover border border-border rounded-lg shadow-lg py-1 z-50 text-[13px] flex flex-col font-sans outline-none min-w-[160px] w-max">
@@ -910,7 +880,7 @@ export function ChatPanel({
                   className="flex items-center justify-between gap-4 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap"
                 >
                   <span>{m.label}</span>
-                  {modelConfig.model_name === m.id && <span className="material-symbols-outlined text-[14px]">check</span>}
+                  {modelConfig.model_name === m.id && <span className="google-symbols text-[14px]">check</span>}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -922,7 +892,7 @@ export function ChatPanel({
               <button
                 className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition cursor-pointer outline-none bg-transparent border-none"
               >
-                <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                <span className="google-symbols text-[20px]">more_vert</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -955,7 +925,7 @@ export function ChatPanel({
       <div className="flex-1 overflow-y-auto p-4 flex flex-col relative bg-background/20">
         {/* Notebook Cover Card */}
         <div 
-          className={`w-full max-w-[640px] mx-auto mt-0 mb-8 relative rounded-2xl min-h-[180px] overflow-hidden group border transition-all duration-300 flex flex-col justify-between ${
+          className={`w-full max-w-[640px] mx-auto mt-0 mb-8 relative rounded-2xl min-h-[180px] flex-shrink-0 overflow-hidden group border transition-all duration-300 flex flex-col ${
             notebookCover 
               ? "border-border/40 bg-cover bg-center shadow-md" 
               : "bg-card hover:bg-accent border-transparent"
@@ -969,7 +939,7 @@ export function ChatPanel({
           {!notebookCover && (
             <div className="absolute -right-8 -bottom-14 opacity-0 group-hover:opacity-[0.08] pointer-events-none select-none text-foreground transition-opacity duration-300">
               <span
-                className="material-symbols-outlined text-[220px] leading-none select-none"
+                className="google-symbols text-[220px] leading-none select-none"
                 style={{ fontVariationSettings: "'wght' 500" }}
               >
                 landscape_2
@@ -977,11 +947,11 @@ export function ChatPanel({
             </div>
           )}
 
-          <div className="p-6 flex flex-col relative z-10 flex-1 justify-between">
+          <div className="p-6 flex flex-col relative z-10 min-h-[178px] justify-between">
             <div className="flex justify-between items-start w-full">
               {!notebookCover && (
                 <div className="cursor-pointer hover:scale-105 transition-transform w-max">
-                  <span className="material-symbols-outlined text-[32px] text-foreground">
+                  <span className="google-symbols text-[32px] text-foreground">
                     menu_book
                   </span>
                 </div>
@@ -995,14 +965,14 @@ export function ChatPanel({
                       : "bg-background/60 border-border text-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+                  <span className="google-symbols text-[16px]">photo_spark</span>
                   Customize
                 </button>
               </div>
             </div>
 
             <div className="mt-6">
-              <h1 className={`text-[29px] font-bold tracking-tight mb-1 leading-tight ${notebookCover ? "text-white" : "text-foreground"}`}>
+              <h1 className={`text-[22px] sm:text-[26px] md:text-[28px] font-bold tracking-tight mb-1 leading-tight ${notebookCover ? "text-white" : "text-foreground"}`}>
                 {notebookTitle}
               </h1>
               <div className={`flex items-center gap-1.5 text-[13px] font-medium ${notebookCover ? "text-white/70" : "text-muted-foreground"}`}>
@@ -1051,9 +1021,9 @@ export function ChatPanel({
               }`}
             >
               {isProcessing ? (
-                <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                <span className="google-symbols text-[20px] animate-spin">sync</span>
               ) : (
-                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                <span className="google-symbols text-[20px]">arrow_forward</span>
               )}
             </button>
           </div>

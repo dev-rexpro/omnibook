@@ -32,7 +32,7 @@ export function NotePanel({ note, onBackToChat, onDelete }: NotePanelProps) {
           >
             Studio
           </span>
-          <span className="material-symbols-outlined text-[16px] text-muted-foreground select-none">
+          <span className="google-symbols text-[16px] text-muted-foreground select-none">
             chevron_right
           </span>
           <span className="text-foreground font-semibold">Note</span>
@@ -43,7 +43,7 @@ export function NotePanel({ note, onBackToChat, onDelete }: NotePanelProps) {
           onClick={() => setIsFullscreen(!isFullscreen)}
           className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition cursor-pointer outline-none"
         >
-          <span className="material-symbols-outlined text-[20px]">
+          <span className="google-symbols text-[20px]">
             {isFullscreen ? "close_fullscreen" : "open_in_full"}
           </span>
         </button>
@@ -62,7 +62,7 @@ export function NotePanel({ note, onBackToChat, onDelete }: NotePanelProps) {
               className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition cursor-pointer outline-none"
               title="Delete note"
             >
-              <span className="material-symbols-outlined text-[22px]">delete</span>
+              <span className="google-symbols text-[22px]">delete</span>
             </button>
           </div>
 
@@ -76,7 +76,7 @@ export function NotePanel({ note, onBackToChat, onDelete }: NotePanelProps) {
       {/* Bottom Alert / Action Footer */}
       <div className="h-14 border-t border-border px-6 flex items-center justify-between bg-card flex-shrink-0">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
-          <span className="material-symbols-outlined text-[20px] text-amber-500 font-semibold select-none">
+          <span className="google-symbols text-[20px] text-amber-500 font-semibold select-none">
             info
           </span>
           <span>Saved responses are view only</span>
@@ -87,7 +87,7 @@ export function NotePanel({ note, onBackToChat, onDelete }: NotePanelProps) {
           }}
           className="bg-background border border-border h-9 px-4 rounded-full flex items-center gap-1.5 text-[13px] font-medium text-foreground hover:bg-accent transition shadow-sm cursor-pointer outline-none"
         >
-          <span className="material-symbols-outlined text-[16px]">change_circle</span>
+          <span className="google-symbols text-[16px]">change_circle</span>
           Convert to source
         </button>
       </div>

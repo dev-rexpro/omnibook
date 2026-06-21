@@ -61,7 +61,8 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
             type="text"
             value={notebookTitle}
             onChange={(e) => onTitleChange(e.target.value)}
-            className="bg-transparent border-none outline-none focus:bg-muted hover:bg-muted/50 focus:ring-1 focus:ring-ring rounded px-2 py-1 w-[240px] transition text-[23px] font-medium text-foreground"
+            className="bg-transparent border-none outline-none focus:bg-muted hover:bg-muted/50 focus:ring-1 focus:ring-ring rounded px-2 py-1 transition text-[23px] font-medium text-foreground max-w-[160px] sm:max-w-[320px] md:max-w-[440px]"
+            style={{ width: `${Math.max(8, notebookTitle.length + 1)}ch` }}
           />
         </div>
       </div>
@@ -72,7 +73,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
           onClick={onCreateNotebook}
           className="h-[34px] px-[18px] bg-zinc-950 text-zinc-50 border border-zinc-950 hover:opacity-90 dark:bg-zinc-50 dark:text-zinc-950 dark:border-zinc-50 rounded-full flex items-center gap-1.5 text-[13px] font-medium active:scale-[0.98] transition-all shadow-sm cursor-pointer outline-none font-sans"
         >
-          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span className="google-symbols text-[18px]">add</span>
           Create notebook
         </button>
         <div className="flex items-center gap-2 relative">
@@ -82,7 +83,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                 id="btnSettings"
                 className="settings-action h-[34px] px-[18px] border border-border bg-background text-foreground rounded-full flex items-center gap-1.5 text-[13px] font-medium hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all shadow-sm cursor-pointer outline-none"
               >
-                <span className="material-symbols-outlined text-[18px]">settings</span>
+                <span className="google-symbols text-[18px]">settings</span>
                 Settings
               </button>
             </DropdownMenuTrigger>
@@ -98,7 +99,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">rule_settings</span>
+                      <span className="google-symbols text-[16px]">rule_settings</span>
                       <span>Change Model</span>
                     </div>
                   </button>
@@ -111,10 +112,10 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">tonality</span>
+                      <span className="google-symbols text-[16px]">tonality</span>
                       <span>Switch Theme</span>
                     </div>
-                    <span className="material-symbols-outlined text-[16px] text-muted-foreground">
+                    <span className="google-symbols text-[16px] text-muted-foreground">
                       chevron_right
                     </span>
                   </button>
@@ -129,7 +130,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     }}
                     className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    <span className="google-symbols text-[16px]">arrow_back</span>
                     <span className="font-medium">Back</span>
                   </button>
 
@@ -141,11 +142,11 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">light_mode</span>
+                      <span className="google-symbols text-[16px]">light_mode</span>
                       <span>Light</span>
                     </div>
                     {theme === "light" && (
-                      <span className="check-icon material-symbols-outlined text-[16px] text-foreground">
+                      <span className="check-icon google-symbols text-[16px] text-foreground">
                         check
                       </span>
                     )}
@@ -159,11 +160,11 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">dark_mode</span>
+                      <span className="google-symbols text-[16px]">dark_mode</span>
                       <span>Dark</span>
                     </div>
                     {theme === "dark" && (
-                      <span className="check-icon material-symbols-outlined text-[16px] text-foreground">
+                      <span className="check-icon google-symbols text-[16px] text-foreground">
                         check
                       </span>
                     )}
@@ -177,11 +178,11 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px]">desktop_windows</span>
+                      <span className="google-symbols text-[16px]">desktop_windows</span>
                       <span>System</span>
                     </div>
                     {theme === "system" && (
-                      <span className="check-icon material-symbols-outlined text-[16px] text-foreground">
+                      <span className="check-icon google-symbols text-[16px] text-foreground">
                         check
                       </span>
                     )}
@@ -215,7 +216,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                 onClick={() => signOut()}
                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans border-none bg-transparent text-[13px]"
               >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <span className="google-symbols text-[16px]">logout</span>
                 <span>Sign Out</span>
               </button>
             </DropdownMenuContent>

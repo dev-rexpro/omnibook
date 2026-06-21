@@ -10,6 +10,9 @@ import { CustomizeSlideDeckDialog } from "@/components/CustomizeSlideDeckDialog"
 import { CustomizeInfographicDialog } from "@/components/CustomizeInfographicDialog"
 import { CustomizeDataTableDialog } from "@/components/CustomizeDataTableDialog"
 import { CustomizeNotebookDialog } from "@/components/CustomizeNotebookDialog"
+import { CustomizeMindMapDialog } from "@/components/CustomizeMindMapDialog"
+import { CustomizeFlashcardsDialog } from "@/components/CustomizeFlashcardsDialog"
+import { CustomizeQuizDialog } from "@/components/CustomizeQuizDialog"
 import { HomePage } from "@/components/HomePage"
 import { AuthPage } from "@/components/AuthPage"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -153,6 +156,9 @@ export function App() {
   const [isInfographicDialogOpen, setIsInfographicDialogOpen] = useState(false)
   const [isDataTableDialogOpen, setIsDataTableDialogOpen] = useState(false)
   const [isNotebookDialogOpen, setIsNotebookDialogOpen] = useState(false)
+  const [isMindMapDialogOpen, setIsMindMapDialogOpen] = useState(false)
+  const [isFlashcardsDialogOpen, setIsFlashcardsDialogOpen] = useState(false)
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false)
   const [activeMobileTab, setActiveMobileTab] = useState<"sources" | "chat" | "studio">("sources")
 
   const handleSaveToNote = (queryText: string, responseText: string, citations?: Citation[]) => {
@@ -260,6 +266,12 @@ export function App() {
       setIsInfographicDialogOpen(true)
     } else if (item === "Data Table") {
       setIsDataTableDialogOpen(true)
+    } else if (item === "Mind Map") {
+      setIsMindMapDialogOpen(true)
+    } else if (item === "Flashcards") {
+      setIsFlashcardsDialogOpen(true)
+    } else if (item === "Quiz") {
+      setIsQuizDialogOpen(true)
     } else {
       generateChatMock(item)
     }
@@ -357,7 +369,7 @@ export function App() {
           <div className="relative w-16 h-16 flex items-center justify-center">
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-zinc-950 border-r-zinc-950 dark:border-t-zinc-50 dark:border-r-zinc-50 animate-spin" />
             <div className="w-8 h-8 rounded-full bg-zinc-950 dark:bg-zinc-50 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px] text-zinc-50 dark:text-zinc-950 animate-pulse">
+              <span className="google-symbols text-[16px] text-zinc-50 dark:text-zinc-950 animate-pulse">
                 sync
               </span>
             </div>
@@ -432,7 +444,7 @@ export function App() {
                     <button 
                       className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-full transition cursor-pointer outline-none bg-transparent border-none"
                     >
-                      <span className="material-symbols-outlined text-[20px]">settings</span>
+                      <span className="google-symbols text-[20px]">settings</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
@@ -450,7 +462,7 @@ export function App() {
                           className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">rule_settings</span>
+                            <span className="google-symbols text-[16px]">rule_settings</span>
                             <span>Change Model</span>
                           </div>
                         </button>
@@ -462,10 +474,10 @@ export function App() {
                           className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">tonality</span>
+                            <span className="google-symbols text-[16px]">tonality</span>
                             <span>Switch Theme</span>
                           </div>
-                          <span className="material-symbols-outlined text-[16px] text-muted-foreground">
+                          <span className="google-symbols text-[16px] text-muted-foreground">
                             chevron_right
                           </span>
                         </button>
@@ -479,7 +491,7 @@ export function App() {
                           }}
                           className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer border-none bg-transparent text-[14px] font-sans"
                         >
-                          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                          <span className="google-symbols text-[16px]">arrow_back</span>
                           <span className="font-medium">Back</span>
                         </button>
 
@@ -491,11 +503,11 @@ export function App() {
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">light_mode</span>
+                            <span className="google-symbols text-[16px]">light_mode</span>
                             <span>Light</span>
                           </div>
                           {theme === "light" && (
-                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                            <span className="google-symbols text-[16px] text-foreground">
                               check
                             </span>
                           )}
@@ -509,11 +521,11 @@ export function App() {
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">dark_mode</span>
+                            <span className="google-symbols text-[16px]">dark_mode</span>
                             <span>Dark</span>
                           </div>
                           {theme === "dark" && (
-                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                            <span className="google-symbols text-[16px] text-foreground">
                               check
                             </span>
                           )}
@@ -527,11 +539,11 @@ export function App() {
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px]">desktop_windows</span>
+                            <span className="google-symbols text-[16px]">desktop_windows</span>
                             <span>System</span>
                           </div>
                           {theme === "system" && (
-                            <span className="material-symbols-outlined text-[16px] text-foreground">
+                            <span className="google-symbols text-[16px] text-foreground">
                               check
                             </span>
                           )}
@@ -564,7 +576,7 @@ export function App() {
                       onClick={() => signOut()}
                       className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans border-none bg-transparent text-[13px]"
                     >
-                      <span className="material-symbols-outlined text-[16px]">logout</span>
+                      <span className="google-symbols text-[16px]">logout</span>
                       <span>Sign Out</span>
                     </button>
                   </DropdownMenuContent>
@@ -578,7 +590,7 @@ export function App() {
                 onClick={handleCreateNotebook}
                 className="h-[32px] px-4 bg-zinc-950 text-zinc-50 border border-zinc-950 dark:bg-zinc-50 dark:text-zinc-950 dark:border-zinc-50 rounded-full flex items-center gap-1.5 text-[12px] font-semibold active:scale-[0.98] transition-all shadow-sm cursor-pointer outline-none font-sans"
               >
-                <span className="material-symbols-outlined text-[16px]">add</span>
+                <span className="google-symbols text-[16px]">add</span>
                 Create notebook
               </button>
             </div>
@@ -724,6 +736,27 @@ export function App() {
             notebookCover={notebookCover}
             onCoverChange={handleCoverChange}
           />
+
+          {/* Mind map customization dialog overlay */}
+          <CustomizeMindMapDialog
+            open={isMindMapDialogOpen}
+            onOpenChange={setIsMindMapDialogOpen}
+            onGenerate={() => generateChatMock("Mind Map")}
+          />
+
+          {/* Flashcards customization dialog overlay */}
+          <CustomizeFlashcardsDialog
+            open={isFlashcardsDialogOpen}
+            onOpenChange={setIsFlashcardsDialogOpen}
+            onGenerate={() => generateChatMock("Flashcards")}
+          />
+
+          {/* Quiz customization dialog overlay */}
+          <CustomizeQuizDialog
+            open={isQuizDialogOpen}
+            onOpenChange={setIsQuizDialogOpen}
+            onGenerate={() => generateChatMock("Quiz")}
+          />
         </div>
       )}
 
@@ -737,7 +770,7 @@ export function App() {
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-zinc-950 border-r-zinc-950 dark:border-t-zinc-50 dark:border-r-zinc-50 animate-spin" />
               {/* Inner pulsing icon */}
               <div className="w-9 h-9 rounded-full bg-zinc-950 dark:bg-zinc-50 flex items-center justify-center animate-pulse">
-                <span className="material-symbols-outlined text-[18px] text-zinc-50 dark:text-zinc-950 select-none">
+                <span className="google-symbols text-[18px] text-zinc-50 dark:text-zinc-950 select-none">
                   menu_book
                 </span>
               </div>

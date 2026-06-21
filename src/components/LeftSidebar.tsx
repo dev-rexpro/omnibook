@@ -71,7 +71,7 @@ export function LeftSidebar({
           onClick={onAddSourceClick}
           className="w-full h-9 border border-border bg-card text-foreground rounded-full flex items-center justify-center gap-2 text-[13px] font-medium hover:bg-accent active:scale-[0.98] transition-all mb-5 shadow-sm cursor-pointer outline-none"
         >
-          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span className="google-symbols text-[18px]">add</span>
           Add sources
         </button>
 
@@ -89,21 +89,21 @@ export function LeftSidebar({
               <button
                 className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
               >
-                <span className="material-symbols-outlined text-[20px] text-zinc-500">language</span>
-                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[20px] text-zinc-500">language</span>
+                <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
               </button>
               <button
                 className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
               >
-                <span className="material-symbols-outlined text-[20px] text-zinc-500">search_spark</span>
-                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[20px] text-zinc-500">search_spark</span>
+                <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
               </button>
             </div>
             <button
               className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none border-none"
               disabled
             >
-              <span className="material-symbols-outlined text-[20px]">search</span>
+              <span className="google-symbols text-[20px]">search</span>
             </button>
           </div>
         </div>
@@ -144,8 +144,8 @@ export function LeftSidebar({
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {/* Document Icon (Black / Light White) */}
-                    <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
-                      description
+                    <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                      {doc.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
                     </span>
 
                     {/* Document Title / Inline Edit */}
@@ -186,7 +186,7 @@ export function LeftSidebar({
                             className="text-muted-foreground hover:text-foreground w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-accent border-none"
                             title="Source options"
                           >
-                            <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                            <span className="google-symbols text-[18px]">more_vert</span>
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -200,14 +200,14 @@ export function LeftSidebar({
                             }}
                             className="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap"
                           >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            <span className="google-symbols text-[16px]">edit</span>
                             <span>Rename source</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => deleteDocument(doc.id)}
                             className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive/80 font-medium whitespace-nowrap"
                           >
-                            <span className="material-symbols-outlined text-[16px] text-destructive">delete</span>
+                            <span className="google-symbols text-[16px] text-destructive">delete</span>
                             <span>Remove source</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -222,11 +222,11 @@ export function LeftSidebar({
                       />
                     ) : (
                       isIndexing ? (
-                        <span className="material-symbols-outlined text-[18px] text-zinc-950 dark:text-zinc-50 animate-spin select-none">
+                        <span className="google-symbols text-[18px] text-zinc-950 dark:text-zinc-50 animate-spin select-none">
                           sync
                         </span>
                       ) : (
-                        <span className="material-symbols-outlined text-[18px] text-destructive select-none">
+                        <span className="google-symbols text-[18px] text-destructive select-none">
                           warning
                         </span>
                       )
@@ -242,7 +242,7 @@ export function LeftSidebar({
         {(!currentNotebook || documents.length === 0) && (
           <div className="flex-1 flex flex-col items-center justify-center text-center mt-8 pb-10">
             <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-3">
-              <span className="material-symbols-outlined text-[24px] text-muted-foreground/60 icon-fill">
+              <span className="google-symbols text-[24px] text-muted-foreground/60 icon-fill">
                 description
               </span>
             </div>
@@ -275,7 +275,7 @@ export function LeftSidebar({
           onClick={onToggleCollapse}
           className="w-8 h-8 flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-full transition flex-shrink-0 z-10 bg-sidebar cursor-pointer outline-none"
         >
-          <span className="material-symbols-outlined text-[20px]">dock_to_right</span>
+          <span className="google-symbols text-[20px]">dock_to_right</span>
         </button>
       </div>
 
@@ -286,7 +286,7 @@ export function LeftSidebar({
           onClick={onAddSourceClick}
           className="w-full h-9 border border-sidebar-border bg-sidebar text-sidebar-foreground rounded-full flex items-center justify-center gap-2 text-[13px] font-medium hover:bg-sidebar-accent active:scale-[0.98] transition-all mb-5 shadow-sm cursor-pointer outline-none"
         >
-          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span className="google-symbols text-[18px]">add</span>
           Add sources
         </button>
 
@@ -304,21 +304,21 @@ export function LeftSidebar({
               <button
                 className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
               >
-                <span className="material-symbols-outlined text-[20px] text-zinc-500">language</span>
-                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[20px] text-zinc-500">language</span>
+                <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
               </button>
               <button
                 className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-foreground h-8 px-2 rounded-full flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-zinc-900 text-[13px] font-medium transition-colors cursor-pointer outline-none"
               >
-                <span className="material-symbols-outlined text-[20px] text-zinc-500">search_spark</span>
-                <span className="material-symbols-outlined text-[20px] text-zinc-400">keyboard_arrow_down</span>
+                <span className="google-symbols text-[20px] text-zinc-500">search_spark</span>
+                <span className="google-symbols text-[20px] text-zinc-400">keyboard_arrow_down</span>
               </button>
             </div>
             <button
               className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none"
               disabled
             >
-              <span className="material-symbols-outlined text-[20px]">search</span>
+              <span className="google-symbols text-[20px]">search</span>
             </button>
           </div>
         </div>
@@ -359,8 +359,8 @@ export function LeftSidebar({
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {/* Document Icon (Black / Light White) */}
-                    <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
-                      description
+                    <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                      {doc.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
                     </span>
 
                     {/* Document Title / Inline Rename Input */}
@@ -401,7 +401,7 @@ export function LeftSidebar({
                             className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 text-sidebar-foreground/60 hover:text-foreground w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-sidebar-accent border-none"
                             title="Source options"
                           >
-                            <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                            <span className="google-symbols text-[18px]">more_vert</span>
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -415,14 +415,14 @@ export function LeftSidebar({
                             }}
                             className="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap"
                           >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            <span className="google-symbols text-[16px]">edit</span>
                             <span>Rename source</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => deleteDocument(doc.id)}
                             className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive/80 font-medium whitespace-nowrap"
                           >
-                            <span className="material-symbols-outlined text-[16px] text-destructive">delete</span>
+                            <span className="google-symbols text-[16px] text-destructive">delete</span>
                             <span>Remove source</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -437,11 +437,11 @@ export function LeftSidebar({
                       />
                     ) : (
                       isIndexing ? (
-                        <span className="material-symbols-outlined text-[18px] text-zinc-950 dark:text-zinc-50 animate-spin select-none">
+                        <span className="google-symbols text-[18px] text-zinc-950 dark:text-zinc-50 animate-spin select-none">
                           sync
                         </span>
                       ) : (
-                        <span className="material-symbols-outlined text-[18px] text-destructive select-none">
+                        <span className="google-symbols text-[18px] text-destructive select-none">
                           warning
                         </span>
                       )
@@ -457,7 +457,7 @@ export function LeftSidebar({
         {(!currentNotebook || documents.length === 0) && (
           <div className="flex-1 flex flex-col items-center justify-center text-center mt-4">
             <div className="w-10 h-10 rounded-xl bg-sidebar-accent flex items-center justify-center mb-3">
-              <span className="material-symbols-outlined text-[24px] text-sidebar-foreground/60 icon-fill">
+              <span className="google-symbols text-[24px] text-sidebar-foreground/60 icon-fill">
                 description
               </span>
             </div>
@@ -480,7 +480,7 @@ export function LeftSidebar({
           className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sidebar-accent text-sidebar-foreground transition-colors bg-sidebar cursor-pointer outline-none flex-shrink-0 relative group/tip"
           title="Add source"
         >
-          <span className="material-symbols-outlined text-[22px]">add</span>
+          <span className="google-symbols text-[22px]">add</span>
           <div className="absolute left-12 bg-zinc-900 text-white text-[12px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition pointer-events-none z-30 font-sans">
             Add source
           </div>
@@ -493,11 +493,13 @@ export function LeftSidebar({
             className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-sidebar-accent text-sidebar-foreground transition-colors cursor-default flex-shrink-0 relative group/tip"
           >
             {doc.status === "indexing" ? (
-              <span className="material-symbols-outlined text-[20px] animate-spin text-sidebar-foreground/60">sync</span>
+              <span className="google-symbols text-[20px] animate-spin text-sidebar-foreground/60">sync</span>
             ) : doc.status === "error" ? (
-              <span className="material-symbols-outlined text-[20px] text-destructive">warning</span>
+              <span className="google-symbols text-[20px] text-destructive">warning</span>
             ) : (
-              <span className="material-symbols-outlined text-[20px] text-sidebar-foreground">description</span>
+              <span className="google-symbols text-[20px] text-sidebar-foreground">
+                {doc.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
+              </span>
             )}
             {/* Filename tooltip on hover */}
             <div className="absolute left-12 bg-zinc-900 text-white text-[12px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition pointer-events-none z-30 font-sans max-w-[180px] truncate">

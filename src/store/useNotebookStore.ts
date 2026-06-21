@@ -1,6 +1,5 @@
 import { create } from "zustand"
 import { supabase } from "@/lib/supabaseClient"
-import { recursiveSplitText } from "@/lib/utils"
 
 export interface Notebook {
   id: string
@@ -167,13 +166,20 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
   },
 
   updateNotebookCover: async (id, cover) => {
-    set((state) => ({
-      notebooks: state.notebooks.map((n) => (n.id === id ? { ...n, cover } : n)),
-      currentNotebook:
-        state.currentNotebook?.id === id
-          ? { ...state.currentNotebook, cover }
-          : state.currentNotebook,
-    }))
+    const { error } = await supabase
+      .from("notebooks")
+      .update({ cover })
+      .eq("id", id)
+
+    if (!error) {
+      set((state) => ({
+        notebooks: state.notebooks.map((n) => (n.id === id ? { ...n, cover } : n)),
+        currentNotebook:
+          state.currentNotebook?.id === id
+            ? { ...state.currentNotebook, cover }
+            : state.currentNotebook,
+      }))
+    }
   },
 
   loadDocuments: async (notebookId) => {
@@ -259,11 +265,6 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
   },
 
   ingestDocument: async (notebookId, filename, text, storagePath) => {
-    const chunks = recursiveSplitText(text, 1000, 200)
-    if (chunks.length === 0) {
-      throw new Error("No text content found to embed.")
-    }
-
     const { data: doc, error } = await supabase
       .from("documents")
       .insert({ 
@@ -287,74 +288,49 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
 
-      const worker = new Worker(
-        new URL("../workers/embedding.worker.ts", import.meta.url),
-        { type: "module" }
-      )
+      if (!token) {
+        throw new Error("Missing access token. Please login again.")
+      }
 
-      worker.postMessage({
-        type: "embed",
-        chunks,
-        supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-        supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        documentId: doc.id,
-        accessToken: token
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000"
+
+      const response = await fetch(`${backendUrl}/ingest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          notebook_id: notebookId,
+          document_id: doc.id,
+          filename: filename,
+          storage_path: storagePath || null,
+          text_content: text || null
+        })
       })
 
-      worker.onmessage = async (event) => {
-        const data = event.data
-        if (data.type === "success") {
-          await supabase
-            .from("documents")
-            .update({ status: "completed" })
-            .eq("id", doc.id)
-
-          const isFirstCompleted = get().documents.filter((d) => d.status === "completed").length === 0
-
-          set((state) => ({
-            documents: state.documents.map((d) =>
-              d.id === doc.id ? { ...d, status: "completed" } : d
-            ),
-            selectedDocumentIds: [...state.selectedDocumentIds, doc.id]
-          }))
-          worker.terminate()
-
-          if (isFirstCompleted) {
-            await get().generateNotebookGuide(notebookId, doc.id)
-          }
-        } else if (data.type === "error" || data.type === "ERROR") {
-          const errMsg = data.message || data.error || "An error occurred during ingestion"
-          console.error("Worker indexing failed:", errMsg)
-          await supabase
-            .from("documents")
-            .update({ status: "error" })
-            .eq("id", doc.id)
-
-          set((state) => ({
-            documents: state.documents.map((d) =>
-              d.id === doc.id ? { ...d, status: "error" } : d
-            )
-          }))
-          worker.terminate()
-        }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.detail || "Failed to process ingestion on backend.")
       }
 
-      worker.onerror = async (err) => {
-        console.error("Worker indexing crashed:", err)
-        await supabase
-          .from("documents")
-          .update({ status: "error" })
-          .eq("id", doc.id)
+      // Success: update document status to completed in local store state
+      set((state) => ({
+        documents: state.documents.map((d) =>
+          d.id === doc.id ? { ...d, status: "completed" } : d
+        ),
+        selectedDocumentIds: [...state.selectedDocumentIds, doc.id]
+      }))
 
-        set((state) => ({
-          documents: state.documents.map((d) =>
-            d.id === doc.id ? { ...d, status: "error" } : d
-          )
-        }))
-        worker.terminate()
+      // Reload notebooks to fetch updated summaries and suggested prompts generated by backend
+      await get().loadNotebooks()
+      const updatedNotebook = get().notebooks.find((n) => n.id === notebookId)
+      if (updatedNotebook) {
+        set({ currentNotebook: updatedNotebook })
       }
+
     } catch (err: any) {
-      console.error("Failed to start worker:", err)
+      console.error("Ingestion failed:", err)
       await supabase
         .from("documents")
         .update({ status: "error" })

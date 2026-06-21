@@ -45,7 +45,9 @@ const CitationBadge = ({ num, citations }: { num: number; citations?: Citation[]
       {isHovered && (
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-popover border border-border text-popover-foreground rounded-xl shadow-xl z-50 text-[12px] leading-relaxed flex flex-col gap-1.5 animate-slide-in pointer-events-none">
           <span className="font-semibold text-foreground flex items-center gap-1.5 border-b border-border/50 pb-1">
-            <span className="material-symbols-outlined text-[14px] text-primary">description</span>
+            <span className="google-symbols text-[14px] text-primary">
+              {citation.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
+            </span>
             <span className="truncate max-w-[200px]">{citation.filename}</span>
           </span>
           <span className="text-muted-foreground italic font-normal line-clamp-4 select-text">
@@ -195,11 +197,11 @@ interface RightSidebarProps {
 }
 
 const STUDIO_ITEMS = [
-  { icon: "spatial_audio_off", label: "Audio Overview" },
+  { icon: "audio_magic_eraser", label: "Audio Overview" },
   { icon: "tablet", label: "Slide Deck" },
   { icon: "subscriptions", label: "Video Overview" },
   { icon: "flowchart", label: "Mind Map" },
-  { icon: "analytics", label: "Reports" },
+  { icon: "auto_tab_group", label: "Reports" },
   { icon: "cards_star", label: "Flashcards" },
   { icon: "quiz", label: "Quiz" },
   { icon: "stacked_bar_chart", label: "Infographic" },
@@ -236,7 +238,7 @@ export function RightSidebar({
                 >
                   Studio
                 </span>
-                <span className="material-symbols-outlined text-[14px] text-muted-foreground select-none">
+                <span className="google-symbols text-[14px] text-muted-foreground select-none">
                   chevron_right
                 </span>
                 <span className="text-foreground font-semibold font-sans">Note</span>
@@ -245,7 +247,7 @@ export function RightSidebar({
                 onClick={() => onNoteSelect(null)}
                 className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition cursor-pointer outline-none border-none bg-transparent"
               >
-                <span className="material-symbols-outlined text-[16px]">collapse_content</span>
+                <span className="google-symbols text-[16px]">collapse_content</span>
               </button>
             </div>
 
@@ -259,7 +261,7 @@ export function RightSidebar({
                   onClick={() => setNoteToDeleteId(activeNote.id)}
                   className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition cursor-pointer outline-none border-none bg-transparent flex-shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                  <span className="google-symbols text-[18px]">delete</span>
                 </button>
               </div>
               <div className="text-[13px] leading-relaxed text-foreground/90 font-sans flex flex-col gap-2.5">
@@ -268,18 +270,12 @@ export function RightSidebar({
             </div>
 
             {/* Footer */}
-            <div className="absolute bottom-0 left-0 right-0 border-t border-border px-4 h-14 flex items-center justify-between bg-background z-20">
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-sans">
-                <span className="material-symbols-outlined text-[16px] text-amber-500 font-semibold select-none animate-pulse">
-                  info
-                </span>
-                <span>Saved responses are view only</span>
-              </div>
+            <div className="absolute bottom-0 left-0 right-0 border-t border-border px-4 h-14 flex items-center justify-end bg-background z-20">
               <button
                 onClick={() => console.log("Convert to source:", activeNote.title)}
                 className="bg-card border border-border h-9 px-4 rounded-full flex items-center justify-center gap-1 text-[11px] font-medium text-foreground hover:bg-accent transition shadow-sm cursor-pointer outline-none flex-shrink-0 font-sans"
               >
-                <span className="material-symbols-outlined text-[14px]">convert_to_text</span>
+                <span className="google-symbols text-[14px]">convert_to_text</span>
                 Convert to source
               </button>
             </div>
@@ -299,7 +295,7 @@ export function RightSidebar({
                     className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
                   >
                     <div className="flex flex-col gap-1 min-w-0 flex-1">
-                      <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                      <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
                         {item.icon}
                       </span>
                       <span className="text-[12px] font-semibold text-foreground truncate font-sans animate-none" title={item.label}>
@@ -311,9 +307,13 @@ export function RightSidebar({
                         e.stopPropagation()
                         if (onChevronClick) onChevronClick(item.label)
                       }}
-                      className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-accent transition-colors cursor-pointer outline-none border-none animate-none"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer outline-none border-none flex-shrink-0 ${
+                        item.label === "Video Overview" || item.label === "Reports"
+                          ? "bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                          : "bg-slate-100 dark:bg-zinc-800/70 hover:bg-slate-200 dark:hover:bg-zinc-700 text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                      <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
                         chevron_right
                       </span>
                     </button>
@@ -341,7 +341,7 @@ export function RightSidebar({
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                            <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
                               description
                             </span>
                             <div className="flex-1 min-w-0">
@@ -363,7 +363,7 @@ export function RightSidebar({
                                   onClick={(e) => e.stopPropagation()}
                                   className="text-muted-foreground hover:text-foreground w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-accent border-none"
                                 >
-                                  <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                                  <span className="google-symbols text-[18px]">more_vert</span>
                                 </button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent
@@ -378,7 +378,7 @@ export function RightSidebar({
                                   }}
                                   className="flex items-center gap-2 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer whitespace-nowrap font-sans"
                                 >
-                                  <span className="material-symbols-outlined text-[16px]">convert_to_text</span>
+                                  <span className="google-symbols text-[16px]">convert_to_text</span>
                                   <span>Convert to source</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -388,7 +388,7 @@ export function RightSidebar({
                                   }}
                                   className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive/80 font-medium whitespace-nowrap font-sans"
                                 >
-                                  <span className="material-symbols-outlined text-[16px] text-destructive">delete</span>
+                                  <span className="google-symbols text-[16px] text-destructive">delete</span>
                                   <span>Delete</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -403,7 +403,7 @@ export function RightSidebar({
                 /* Empty state */
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center pb-24 mt-4">
                   <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-3">
-                    <span className="material-symbols-outlined text-[24px] text-muted-foreground/60 icon-fill">
+                    <span className="google-symbols text-[24px] text-muted-foreground/60 icon-fill">
                       magic_button
                     </span>
                   </div>
@@ -423,7 +423,7 @@ export function RightSidebar({
                 onClick={onAddNoteClick}
                 className="bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950 h-10 px-5 rounded-full flex items-center gap-2 text-[14px] font-semibold shadow-lg hover:scale-105 transition-all pointer-events-auto cursor-pointer outline-none border-none font-sans"
               >
-                <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                <span className="google-symbols text-[18px]">edit_note</span>
                 <span>Add note</span>
               </button>
             </div>
@@ -490,7 +490,7 @@ export function RightSidebar({
               >
                 Studio
               </span>
-              <span className="material-symbols-outlined text-[16px] text-muted-foreground select-none">
+              <span className="google-symbols text-[16px] text-muted-foreground select-none">
                 chevron_right
               </span>
               <span className="text-foreground font-semibold font-sans">Note</span>
@@ -500,7 +500,7 @@ export function RightSidebar({
               className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-sidebar-accent rounded-full transition cursor-pointer outline-none border-none bg-transparent"
               title="Close note"
             >
-              <span className="material-symbols-outlined text-[18px]">collapse_content</span>
+              <span className="google-symbols text-[18px]">collapse_content</span>
             </button>
           </div>
 
@@ -517,7 +517,7 @@ export function RightSidebar({
                 className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition cursor-pointer outline-none border-none bg-transparent flex-shrink-0"
                 title="Delete note"
               >
-                <span className="material-symbols-outlined text-[20px]">delete</span>
+                <span className="google-symbols text-[20px]">delete</span>
               </button>
             </div>
             <div className="text-[13px] leading-relaxed text-foreground/90 font-sans flex flex-col gap-2.5">
@@ -526,18 +526,12 @@ export function RightSidebar({
           </div>
 
           {/* Footer Area inside sidebar - side-by-side elements in a single row */}
-          <div className="absolute bottom-0 left-0 right-0 border-t border-sidebar-border px-4 h-14 flex items-center justify-between bg-sidebar z-20">
-            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-sans">
-              <span className="material-symbols-outlined text-[18px] text-amber-500 font-semibold select-none">
-                info
-              </span>
-              <span>Saved responses are view only</span>
-            </div>
+          <div className="absolute bottom-0 left-0 right-0 border-t border-sidebar-border px-4 h-14 flex items-center justify-end bg-sidebar z-20">
             <button
               onClick={() => console.log("Convert to source:", activeNote.title)}
               className="bg-card border border-border h-9 px-4 rounded-full flex items-center justify-center gap-1.5 text-[12px] font-medium text-foreground hover:bg-accent transition shadow-sm cursor-pointer outline-none flex-shrink-0 font-sans"
             >
-              <span className="material-symbols-outlined text-[16px]">convert_to_text</span>
+              <span className="google-symbols text-[16px]">convert_to_text</span>
               Convert to source
             </button>
           </div>
@@ -555,7 +549,7 @@ export function RightSidebar({
               onClick={onToggleCollapse}
               className="w-8 h-8 flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-full transition flex-shrink-0 z-10 bg-sidebar cursor-pointer outline-none border-none bg-transparent"
             >
-              <span className="material-symbols-outlined text-[20px]">dock_to_left</span>
+              <span className="google-symbols text-[20px]">dock_to_left</span>
             </button>
           </div>
 
@@ -571,7 +565,7 @@ export function RightSidebar({
                   className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
                 >
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                    <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
                       {item.icon}
                     </span>
                     <span className="text-[13px] font-semibold text-foreground truncate font-sans" title={item.label}>
@@ -583,9 +577,13 @@ export function RightSidebar({
                       e.stopPropagation()
                       if (onChevronClick) onChevronClick(item.label)
                     }}
-                    className="w-8 h-8 rounded-full flex items-center justify-center bg-transparent hover:bg-accent transition-colors opacity-0 group-hover/item:opacity-100 cursor-pointer outline-none border-none"
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer outline-none border-none flex-shrink-0 ${
+                      item.label === "Video Overview" || item.label === "Reports"
+                        ? "bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                        : "bg-slate-100 dark:bg-zinc-800/70 hover:bg-slate-200 dark:hover:bg-zinc-700 text-muted-foreground hover:text-foreground"
+                    }`}
                   >
-                    <span className="material-symbols-outlined text-[16px] text-muted-foreground group-hover:text-foreground">
+                    <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
                       chevron_right
                     </span>
                   </button>
@@ -612,7 +610,7 @@ export function RightSidebar({
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className="material-symbols-outlined text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
+                          <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
                             description
                           </span>
                           <div className="flex-1 min-w-0">
@@ -634,7 +632,7 @@ export function RightSidebar({
                                 onClick={(e) => e.stopPropagation()}
                                 className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 text-sidebar-foreground/60 hover:text-foreground w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-sidebar-accent border-none"
                               >
-                                <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                                <span className="google-symbols text-[18px]">more_vert</span>
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
@@ -649,7 +647,7 @@ export function RightSidebar({
                                 }}
                                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
                               >
-                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">convert_to_text</span>
+                                <span className="google-symbols text-[18px] text-muted-foreground">convert_to_text</span>
                                 <span>Convert to source</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -659,7 +657,7 @@ export function RightSidebar({
                                 }}
                                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
                               >
-                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">library_add</span>
+                                <span className="google-symbols text-[18px] text-muted-foreground">library_add</span>
                                 <span>Convert all notes to source</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -669,7 +667,7 @@ export function RightSidebar({
                                 }}
                                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
                               >
-                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">description</span>
+                                <span className="google-symbols text-[18px] text-muted-foreground">description</span>
                                 <span>Export to Docs</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -679,7 +677,7 @@ export function RightSidebar({
                                 }}
                                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
                               >
-                                <span className="material-symbols-outlined text-[18px] text-muted-foreground">table_view</span>
+                                <span className="google-symbols text-[18px] text-muted-foreground">table_view</span>
                                 <span>Export to Sheets</span>
                               </DropdownMenuItem>
                               <div className="h-px bg-border my-1" />
@@ -690,7 +688,7 @@ export function RightSidebar({
                                 }}
                                 className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
                               >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                <span className="google-symbols text-[18px]">delete</span>
                                 <span>Delete</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -705,7 +703,7 @@ export function RightSidebar({
               /* Empty State */
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center pb-24">
                 <div className="w-10 h-10 rounded-xl bg-sidebar-accent flex items-center justify-center mb-3">
-                  <span className="material-symbols-outlined text-[24px] text-sidebar-foreground/60 icon-fill">
+                  <span className="google-symbols text-[24px] text-sidebar-foreground/60 icon-fill">
                     magic_button
                   </span>
                 </div>
@@ -728,7 +726,7 @@ export function RightSidebar({
             key={index}
             className="w-10 h-10 text-zinc-600 rounded-lg flex items-center justify-center cursor-pointer hover:bg-zinc-100 hover:text-zinc-900 transition relative group/tip flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+            <span className="google-symbols text-[18px]">{item.icon}</span>
             <div className="absolute right-12 bg-zinc-900 text-white text-[13px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition pointer-events-none z-30 font-sans">
               {item.label}
             </div>
@@ -747,7 +745,7 @@ export function RightSidebar({
             onClick={onAddNoteClick}
             className="bg-primary text-primary-foreground h-[40px] px-[20px] rounded-full flex items-center gap-2 text-[15px] font-medium shadow-lg hover:scale-105 transition-all pointer-events-auto cursor-pointer outline-none border-none font-sans"
           >
-            <span className="material-symbols-outlined text-[18px] flex-shrink-0">
+            <span className="google-symbols text-[18px] flex-shrink-0">
               sticky_note_2
             </span>
             <span id="textAddNote">Add note</span>

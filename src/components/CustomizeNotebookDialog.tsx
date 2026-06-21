@@ -72,7 +72,7 @@ export function CustomizeNotebookDialog({
           </h2>
           <ShadcnDialogClose asChild>
             <button className="w-10 h-10 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition cursor-pointer outline-none flex-shrink-0">
-              <span className="material-symbols-outlined text-[24px]">close</span>
+              <span className="google-symbols text-[24px]">close</span>
             </button>
           </ShadcnDialogClose>
         </div>
@@ -90,7 +90,7 @@ export function CustomizeNotebookDialog({
             )}
             
             {!cover && (
-              <span className="material-symbols-outlined text-muted-foreground/15 text-[80px] select-none z-0">
+              <span className="google-symbols text-muted-foreground/15 text-[80px] select-none z-0">
                 landscape
               </span>
             )}
@@ -110,7 +110,7 @@ export function CustomizeNotebookDialog({
                 type="button"
                 className="absolute top-4 left-4 bg-black/55 backdrop-blur-md border border-white/20 w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-black/70 cursor-pointer shadow-sm active:scale-[0.97] transition-all z-10"
               >
-                <span className="material-symbols-outlined text-[18px]">delete</span>
+                <span className="google-symbols text-[18px]">delete</span>
               </button>
             )}
             
@@ -123,7 +123,7 @@ export function CustomizeNotebookDialog({
                   : "bg-background/90 border-border text-foreground hover:bg-accent"
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">upload</span>
+              <span className="google-symbols text-[16px]">upload</span>
               Upload
             </button>
           </div>
@@ -146,7 +146,7 @@ export function CustomizeNotebookDialog({
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3 flex-1">
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground flex-shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">subject</span>
+                  <span className="google-symbols text-[20px]">subject</span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <span className="text-[15px] font-semibold text-foreground">
