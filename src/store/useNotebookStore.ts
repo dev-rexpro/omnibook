@@ -31,6 +31,7 @@ export interface Message {
   text: string
   suggestedPrompts?: string[]
   citations?: Citation[]
+  created_at?: string
 }
 
 export interface ModelConfig {
@@ -454,6 +455,7 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
         sender: m.role === "model" ? "ai" : "user",
         text: m.content,
         citations: m.citations || undefined,
+        created_at: m.created_at,
       }))
       set({ chatHistory: mapped })
     }

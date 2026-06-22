@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useTheme } from "@/components/theme-provider"
 import {
   DropdownMenu,
@@ -20,6 +20,15 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
   const [menuView, setMenuView] = useState<"main" | "theme">("main")
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
+  const [inputWidth, setInputWidth] = useState<number | string>("auto")
+  const hiddenSpanRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (hiddenSpanRef.current) {
+      setInputWidth(hiddenSpanRef.current.offsetWidth + 16)
+    }
+  }, [notebookTitle])
+
   const handleOpenChange = (open: boolean) => {
     setDropdownOpen(open)
     if (!open) {
@@ -29,11 +38,12 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
   }
 
   return (
-    <header className="h-[64px] flex-shrink-0 flex items-center justify-between px-[28px] bg-background text-foreground z-30">
-      <div className="flex items-center gap-3">
+    <header className="h-[64px] flex-shrink-0 flex items-center justify-between px-5 bg-background text-foreground z-30">
+      {/* Left: Logo & Title */}
+      <div className="flex items-center gap-3 flex-grow min-w-0 mr-4">
         <a
           href="#"
-          className="icon-container-active"
+          className="icon-container-active w-9 h-9 flex items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition flex-shrink-0"
           onClick={(e) => {
             e.preventDefault()
             if (onLogoClick) onLogoClick()
@@ -56,32 +66,46 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
             <rect width="20" height="12" x="2" y="6" rx="2" />
           </svg>
         </a>
-        <div className="flex items-center text-md font-semibold">
-          <input
-            type="text"
-            value={notebookTitle}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className="bg-transparent border-none outline-none focus:bg-muted hover:bg-muted/50 focus:ring-1 focus:ring-ring rounded px-2 py-1 transition text-[23px] font-medium text-foreground max-w-[160px] sm:max-w-[320px] md:max-w-[440px]"
-            style={{ width: `${Math.max(8, notebookTitle.length + 1)}ch` }}
-          />
+        <div className="flex items-center flex-1 text-[20px] gap-2 overflow-hidden px-2 whitespace-nowrap leading-[48px]">
+          <div className="text-ellipsis whitespace-nowrap text-[22px] font-normal leading-[36px] text-foreground">
+            <div className="relative flex items-center">
+              <div
+                ref={hiddenSpanRef}
+                aria-hidden="true"
+                className="invisible absolute pointer-events-none whitespace-pre text-[22px] leading-[36px]"
+              >
+                {notebookTitle || "Untitled notebook"}
+              </div>
+              <input
+                id="title-input"
+                type="text"
+                value={notebookTitle}
+                onChange={(e) => onTitleChange(e.target.value)}
+                className="bg-transparent border border-transparent focus:border-gray-300 dark:focus:border-zinc-700 outline-none text-foreground text-[22px] leading-[36px] px-2 py-0.5 -mx-2 rounded-md transition-colors"
+                style={{ width: inputWidth }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1">
         <button
-          id="btnCreateNotebook"
+          id="create-notebook-btn"
           onClick={onCreateNotebook}
-          className="h-[34px] px-[18px] bg-zinc-950 text-zinc-50 border border-zinc-950 hover:opacity-90 dark:bg-zinc-50 dark:text-zinc-950 dark:border-zinc-50 rounded-full flex items-center gap-1.5 text-[13px] font-medium active:scale-[0.98] transition-all shadow-sm cursor-pointer outline-none font-sans"
+          className="min-w-max w-fit h-[32px] shrink-0 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition px-[24px] text-[14px] font-medium flex items-center justify-center border-none outline-none cursor-pointer"
         >
-          <span className="google-symbols text-[18px]">add</span>
-          Create notebook
+          <span className="google-symbols text-[18px] mr-[8px] -ml-[8px]">add</span>
+          <span>Create notebook</span>
         </button>
-        <div className="flex items-center gap-2 relative">
+
+        <div className="flex items-center gap-2 ml-2 relative">
           <DropdownMenu open={dropdownOpen} onOpenChange={handleOpenChange}>
             <DropdownMenuTrigger asChild>
               <button
                 id="btnSettings"
-                className="settings-action h-[34px] px-[18px] border border-border bg-background text-foreground rounded-full flex items-center gap-1.5 text-[13px] font-medium hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition-all shadow-sm cursor-pointer outline-none"
+                className="settings-action h-[32px] px-3 border border-border bg-card dark:bg-muted/50 text-foreground rounded-full flex items-center gap-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground active:scale-[0.98] transition shadow-sm cursor-pointer outline-none"
               >
                 <span className="google-symbols text-[18px]">settings</span>
                 Settings
@@ -90,13 +114,13 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
             <DropdownMenuContent
               align="end"
               sideOffset={6}
-              className="w-[200px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[14px] flex flex-col font-sans outline-none"
+              className="w-[180px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
             >
               {menuView === "main" ? (
                 <div id="settingsMainMenu" className="flex flex-col w-full">
                   <button
                     id="btnChangeModel"
-                    className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
+                    className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer text-[13px] border-none bg-transparent"
                   >
                     <div className="flex items-center gap-2">
                       <span className="google-symbols text-[16px]">rule_settings</span>
@@ -109,7 +133,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                       e.stopPropagation()
                       setMenuView("theme")
                     }}
-                    className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
+                    className="flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer text-[13px] border-none bg-transparent"
                   >
                     <div className="flex items-center gap-2">
                       <span className="google-symbols text-[16px]">tonality</span>
@@ -128,14 +152,14 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                       e.stopPropagation()
                       setMenuView("main")
                     }}
-                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors border-b border-border mb-1 text-muted-foreground hover:text-foreground outline-none cursor-pointer text-[13px] border-none bg-transparent"
                   >
                     <span className="google-symbols text-[16px]">arrow_back</span>
                     <span className="font-medium">Back</span>
                   </button>
 
                   <button
-                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
+                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer text-[13px] border-none bg-transparent"
                     onClick={() => {
                       setTheme("light")
                       setDropdownOpen(false)
@@ -153,7 +177,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                   </button>
 
                   <button
-                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
+                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer text-[13px] border-none bg-transparent"
                     onClick={() => {
                       setTheme("dark")
                       setDropdownOpen(false)
@@ -171,7 +195,7 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
                   </button>
 
                   <button
-                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer"
+                    className="theme-option flex items-center justify-between px-3 py-1.5 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer text-[13px] border-none bg-transparent"
                     onClick={() => {
                       setTheme("system")
                       setDropdownOpen(false)
@@ -192,10 +216,11 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-1 ml-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-[36px] h-[36px] rounded-full border border-border overflow-hidden bg-card flex items-center justify-center hover:opacity-90 transition outline-none cursor-pointer">
+              <button className="w-8 h-8 rounded-full border border-border overflow-hidden bg-card flex items-center justify-center hover:opacity-90 transition outline-none cursor-pointer p-0">
                 <img
                   src={user?.avatarUrl || "https://ui-avatars.com/api/?name=User&background=f4f4f5&color=09090b&bold=true"}
                   className="w-full h-full object-cover"
@@ -226,3 +251,4 @@ export function Header({ notebookTitle, onTitleChange, onLogoClick, onCreateNote
     </header>
   )
 }
+

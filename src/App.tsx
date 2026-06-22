@@ -174,7 +174,7 @@ export function App() {
       id: `note-${Date.now()}`,
       title: title,
       content: responseText,
-      createdAt: "Just now",
+      createdAt: new Date().toISOString(),
       citations: citations || [],
     }
 
@@ -285,21 +285,21 @@ export function App() {
         title: "Initiating Your AI Video Synthesis Project",
         content:
           "I'd love to help you create a video overview! To get started, I just need some source material to work with. Since your notebook is currently empty, the best first step is to upload some content in the source panel on the left.\n\nYou can upload:\n• PDFs or Google Docs\n• Website links or YouTube videos\n• Plain text snippets\n\nOnce you've added your sources, I can synthesize that information into a narrated slide presentation with AI-generated visuals. If you don't have files ready, I can even help you find",
-        createdAt: "37m ago",
+        createdAt: new Date(Date.now() - 37 * 60 * 1000).toISOString(),
       }
     } else if (notes.length === 1) {
       newNote = {
         id: "note-2",
         title: "New Note",
         content: "Write your note content here...",
-        createdAt: "1h ago",
+        createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
       }
     } else {
       newNote = {
         id: `note-${Date.now()}`,
         title: `New Note ${notes.length + 1}`,
         content: "Write your note content here...",
-        createdAt: "Just now",
+        createdAt: new Date().toISOString(),
       }
     }
     setNotes((prev) => [...prev, newNote])

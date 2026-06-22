@@ -430,4 +430,238 @@
     .animate-fade-in {
         animation: fadeIn 0.3s ease-out forwards;
     }
+
+    /* Grid Container refinement */
+    .studio-grid {
+        gap: 8px !important;
+        padding: 0px !important;
+        margin: 16px 0 16px 16px !important;
+        grid-template-columns: 149.653px 149.653px !important;
+    }
+
+    /* Button Component refinement */
+    .studio-btn {
+        height: 55.99px !important;
+        padding: 8px 8px 8px 12px !important;
+        border-radius: 12px !important;
+        font-family: 'Google Sans Text', sans-serif !important;
+        font-size: 12px !important;
+        letter-spacing: 0.096px !important;
+        border: 1px solid var(--border) !important;
+        background-color: var(--card) !important;
+        transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease !important;
+    }
+
+    .studio-btn:hover {
+        background-color: var(--accent) !important;
+    }
+
+    .studio-btn span {
+        color: var(--foreground) !important;
+    }
+
+    .studio-btn span.google-symbols:last-child {
+        color: var(--muted-foreground) !important;
+    }
+
+    .studio-btn .hover-gif {
+        display: none;
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
+    }
+
+    .studio-btn:hover .flex-col>.google-symbols {
+        display: none !important;
+    }
+
+    .studio-btn:hover .hover-gif {
+        display: block !important;
+    }
+
+    /* Dark mode overrides for hardcoded colors */
+    .dark .text-gray-800,
+    .dark .text-gray-700 {
+        color: var(--foreground) !important;
+    }
+
+    .dark .text-gray-600 {
+        color: var(--muted-foreground) !important;
+    }
+
+    .dark .text-brand-text {
+        color: var(--foreground) !important;
+    }
+
+    .dark .bg-white {
+        background-color: var(--background) !important;
+    }
+
+    .dark .bg-gray-100 {
+        background-color: var(--muted) !important;
+    }
+
+    .dark .bg-gray-50 {
+        background-color: var(--muted) !important;
+    }
+
+    .dark .hover\:bg-gray-100:hover {
+        background-color: var(--accent) !important;
+    }
+
+    .dark .hover\:bg-gray-200:hover {
+        background-color: var(--accent) !important;
+    }
+
+    .dark .hover\:bg-gray-50:hover {
+        background-color: var(--accent) !important;
+    }
+
+    .dark .border-brand-border {
+        border-color: var(--border) !important;
+    }
+
+    .dark .border-gray-200 {
+        border-color: var(--border) !important;
+    }
+
+    .dark input[type="checkbox"] {
+        color-scheme: dark;
+        accent-color: var(--foreground) !important;
+    }
+
+    /* Hover animation for Studio card chevron container */
+    .studio-btn .w-7 {
+        transition: background-color 0.2s ease, transform 0.2s ease !important;
+    }
+
+    .studio-btn .w-7:hover {
+        background-color: #ffffff !important;
+        transform: scale(1.1);
+    }
+
+    .dark .studio-btn .w-7:hover {
+        background-color: #2c3954 !important;
+    }
+
+    /* --- SIDEBAR TOGGLE TRANSITION OVERRIDES --- */
+    .sidebar {
+        transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .sidebar.collapsed {
+        width: 64px !important;
+        min-width: 64px !important;
+    }
+
+    .sidebar-header {
+        transition: padding 0.35s ease, justify-content 0.3s !important;
+    }
+
+    .sidebar.collapsed .sidebar-header {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        justify-content: center !important;
+    }
+
+    .sidebar-title {
+        transition: max-width 0.3s ease, opacity 0.2s ease !important;
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .sidebar.collapsed .sidebar-title {
+        max-width: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .sidebar-content {
+        transition: opacity 0.2s ease !important;
+    }
+
+    .sidebar.collapsed .sidebar-content {
+        opacity: 0 !important;
+        pointer-events: none;
+        overflow: hidden !important;
+    }
+
+    /* Transition style for Add Note button to shrink when collapsed */
+    #btnTextAddNote {
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .sidebar.collapsed #btnTextAddNote {
+        width: 40px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        justify-content: center !important;
+    }
+
+    .sidebar.collapsed #textAddNote {
+        opacity: 0 !important;
+        width: 0 !important;
+        display: none !important;
+    }
+
+    /* --- COLLAPSED ICONS & TOOLTIPS --- */
+    .collapsed-icons {
+        transition: opacity 0.3s ease !important;
+        opacity: 0 !important;
+        pointer-events: none;
+    }
+
+    .sidebar.collapsed .collapsed-icons {
+        opacity: 1 !important;
+        pointer-events: auto;
+        transition-delay: 0.1s;
+    }
+
+    .collapsed-icons::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    .collapsed-icons {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
+    }
+
+    .highlight {
+        background: linear-gradient(90deg, #7085F4 0%, #66E084 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* --- TERMINAL CURSOR & LOADING ANIMATIONS --- */
+    .terminal-cursor {
+        width: 8px;
+        height: 16px;
+        background-color: #374151;
+        animation: blink 1s step-end infinite;
+    }
+    .dark .terminal-cursor {
+        background-color: #d1d5db;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    .text-update {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateX(-4px); }
+        100% { opacity: 1; transform: translateX(0); }
+    }
 }

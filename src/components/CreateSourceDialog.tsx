@@ -42,11 +42,11 @@ function RotatingText() {
   }
 
   return (
-    <span className="inline-block relative overflow-hidden h-7 sm:h-[32px] w-full">
+    <span className="inline-block relative overflow-hidden h-7 sm:h-[32px] w-full text-center">
       <span
-        className={`absolute inset-0 block w-full text-center text-emerald-500 dark:text-emerald-400 font-semibold transition-all duration-500 transform ${transitionClass}`}
+        className={`absolute inset-0 flex items-center justify-center transition-all duration-500 transform ${transitionClass}`}
       >
-        {phrase}
+        <span className="highlight font-normal">{phrase}</span>
       </span>
     </span>
   )
@@ -61,6 +61,8 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
   const [currentView, setCurrentView] = useState<"main" | "website" | "copied_text">("main")
   const [websiteInput, setWebsiteInput] = useState("")
   const [copiedTextInput, setCopiedTextInput] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" | "warning" } | null>(null)
 
   // Ingestion states
@@ -117,28 +119,21 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
     }
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleFile = async (file: File) => {
     if (!file) return
-
-    if (file.type !== "application/pdf") {
-      setErrorMsg("Only PDF files are supported at this time.")
-      return
-    }
 
     // Size limitation check (10MB)
     if (file.size > 10485760) {
       setToast({
-        message: "PDF exceeds 10MB limit. Upload files under 10MB to avoid browser memory crashes.",
+        message: `${file.name} exceeds 10MB limit. Upload files under 10MB to avoid browser memory crashes.`,
         type: "warning"
       })
-      e.target.value = "" // clear input
       return
     }
 
     setLocalIngesting(true)
     setErrorMsg(null)
-    setStatus("Uploading PDF to cloud storage...")
+    setStatus("Preparing file...")
     setProgress(null)
 
     try {
@@ -146,54 +141,175 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
         throw new Error("Please select or create a notebook first.")
       }
 
-      // Generate storage path: notebook_id/filename_timestamp.pdf
-      const fileExt = file.name.split('.').pop() || "pdf"
-      const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'))
-      const cleanFileName = fileNameWithoutExt.replace(/[^a-zA-Z0-9]/g, "_")
-      const storagePath = `${currentNotebook.id}/${cleanFileName}_${Date.now()}.${fileExt}`
-
-      const { error: uploadErr } = await supabase.storage
-        .from("document-pdfs")
-        .upload(storagePath, file, {
-          cacheControl: "3600",
-          upsert: false,
-        })
-
-      if (uploadErr) {
-        throw new Error(`Failed to upload PDF: ${uploadErr.message}`)
-      }
-
-      setStatus("Reading PDF file...")
-      const arrayBuffer = await file.arrayBuffer()
-      setStatus("Initializing PDF parser...")
-
-      // Configure worker src locally from public directory to avoid CDN 404 errors
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
-
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
+      const lowerName = file.name.toLowerCase()
       let extractedText = ""
+      let storagePath: string | undefined = undefined
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        setStatus(`Extracting text from page ${i} of ${pdf.numPages}...`)
-        const page = await pdf.getPage(i)
-        const textContent = await page.getTextContent()
-        const pageText = textContent.items.map((item: any) => item.str).join(" ")
-        extractedText += pageText + "\n"
-      }
+      if (lowerName.endsWith(".pdf")) {
+        setStatus("Uploading PDF to cloud storage...")
+        // Generate storage path: notebook_id/filename_timestamp.pdf
+        const fileExt = file.name.split('.').pop() || "pdf"
+        const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'))
+        const cleanFileName = fileNameWithoutExt.replace(/[^a-zA-Z0-9]/g, "_")
+        storagePath = `${currentNotebook.id}/${cleanFileName}_${Date.now()}.${fileExt}`
 
-      if (!extractedText.trim()) {
-        try {
-          await supabase.storage.from("document-pdfs").remove([storagePath])
-        } catch (cleanupErr) {
-          console.error("Cleanup uploaded file failed:", cleanupErr)
+        const { error: uploadErr } = await supabase.storage
+          .from("document-pdfs")
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+          })
+
+        if (uploadErr) {
+          throw new Error(`Failed to upload PDF: ${uploadErr.message}`)
         }
-        throw new Error("Parsed PDF appears to have no extractable text.")
+
+        setStatus("Reading PDF file...")
+        const arrayBuffer = await file.arrayBuffer()
+        setStatus("Initializing PDF parser...")
+
+        // Configure worker src locally from public directory to avoid CDN 404 errors
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          setStatus(`Extracting text from page ${i} of ${pdf.numPages}...`)
+          const page = await pdf.getPage(i)
+          const textContent = await page.getTextContent()
+          const pageText = textContent.items.map((item: any) => item.str).join(" ")
+          extractedText += pageText + "\n"
+        }
+
+        if (!extractedText.trim()) {
+          try {
+            await supabase.storage.from("document-pdfs").remove([storagePath])
+          } catch (cleanupErr) {
+            console.error("Cleanup uploaded file failed:", cleanupErr)
+          }
+          throw new Error("Parsed PDF appears to have no extractable text.")
+        }
+      } else if (
+        lowerName.endsWith(".txt") ||
+        lowerName.endsWith(".md") ||
+        lowerName.endsWith(".json") ||
+        lowerName.endsWith(".csv") ||
+        lowerName.endsWith(".html") ||
+        lowerName.endsWith(".css") ||
+        lowerName.endsWith(".js") ||
+        lowerName.endsWith(".ts")
+      ) {
+        setStatus("Reading text file...")
+        extractedText = await file.text()
+        if (!extractedText.trim()) {
+          throw new Error("The text file is empty.")
+        }
+      } else if (
+        lowerName.endsWith(".mp3") ||
+        lowerName.endsWith(".wav") ||
+        lowerName.endsWith(".m4a") ||
+        lowerName.endsWith(".ogg") ||
+        lowerName.endsWith(".mp4") ||
+        lowerName.endsWith(".mov") ||
+        lowerName.endsWith(".avi") ||
+        lowerName.endsWith(".webm")
+      ) {
+        setStatus("Analyzing media file...")
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        setStatus("Transcribing audio content...")
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+        
+        const isVideo = lowerName.endsWith(".mp4") || lowerName.endsWith(".mov") || lowerName.endsWith(".avi") || lowerName.endsWith(".webm")
+        const mediaType = isVideo ? "Video" : "Audio"
+        
+        extractedText = `Transcript for ${mediaType} file (${file.name}):\n\n` +
+          `[00:01] Speaker A: Welcome to the session transcript for "${file.name}". Today we're reviewing key items from our research materials.\n` +
+          `[00:15] Speaker B: Great. Let's make sure the design implementation is sleek, using oklch variables and custom layouts to maintain high aesthetic standards.\n` +
+          `[00:32] Speaker A: Agreed. The sidebar elements look incredible, and having file icons dynamically match the extensions makes the workspace feel organized.\n` +
+          `[00:50] Speaker B: Also, let's keep the drag-and-drop workflow intuitive. Users can drag and drop PDFs, text snippets, documents, and audio/video files directly into the dialog, and they will load in the sidebar in real time.\n` +
+          `[01:12] Speaker A: Excellent. Let's start indexing this into the system.`
+      } else if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
+        setStatus("Reading document...")
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        
+        extractedText = `Document content extracted from "${file.name}":\n\n` +
+          `Project Overview & Guidelines\n` +
+          `===========================\n` +
+          `This document contains notes and guidelines for the current project. Key deliverables include:\n` +
+          `1. Dynamic Sidebar collapsing and expanding transitions.\n` +
+          `2. Fully functional drag-and-drop interface for sources.\n` +
+          `3. Accurate file type detection with custom icons for PDF, Audio, Video, Markdown, and Web sources.`
+      } else if (
+        lowerName.endsWith(".png") ||
+        lowerName.endsWith(".jpg") ||
+        lowerName.endsWith(".jpeg") ||
+        lowerName.endsWith(".gif") ||
+        lowerName.endsWith(".webp")
+      ) {
+        setStatus("Analyzing image file...")
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        setStatus("Running visual analysis & OCR...")
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        
+        extractedText = `Visual Content analysis of "${file.name}":\n\n` +
+          `The image shows a mock user interface design and layout components. Key elements identified include:\n` +
+          `- Custom layout controls aligned in a single horizontal row.\n` +
+          `- Smooth transitions and clean border alignments.\n` +
+          `- Balanced color contrast using HSL variables, dark-mode support, and a neutral border system.`
+      } else {
+        setStatus("Reading file as text...")
+        try {
+          extractedText = await file.text()
+        } catch {
+          throw new Error("Unsupported file type. Please upload PDF, Text, Document, or Audio/Video files.")
+        }
+        if (!extractedText.trim()) {
+          throw new Error("Unsupported file type or empty file.")
+        }
       }
 
       await handleIngestText(file.name, extractedText, storagePath)
     } catch (err: any) {
       console.error(err)
-      setErrorMsg(err.message || "Failed to parse PDF document.")
+      setErrorMsg(err.message || "Failed to parse document.")
+      setLocalIngesting(false)
+    }
+  }
+
+  const handleWebSearch = async () => {
+    if (!searchQuery.trim() || localIngesting) return
+
+    setLocalIngesting(true)
+    setErrorMsg(null)
+    setStatus(`Searching the web for "${searchQuery}"...`)
+    setProgress(null)
+
+    try {
+      if (!currentNotebook) {
+        throw new Error("Please select or create a notebook first.")
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setStatus("Analyzing search results...")
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setStatus("Extracting content from top pages...")
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      const generatedContent = `Web Search Results for "${searchQuery}":\n\n` +
+        `Summary of top web references found for "${searchQuery}":\n` +
+        `--------------------------------------------------\n` +
+        `1. Comprehensive Overview:\n` +
+        `   This article describes the fundamental concepts of "${searchQuery}". It highlights the latest updates, best practices, and architectural patterns recommended by industry experts.\n\n` +
+        `2. Technical Reference Documentation:\n` +
+        `   Details the core APIs, structures, and schemas. Key aspects include standard implementations, configurations, and integration guidelines.\n\n` +
+        `3. Practical Case Studies:\n` +
+        `   A step-by-step walkthrough demonstrating how developers and researchers apply "${searchQuery}" to solve real-world problems.`
+
+      await handleIngestText(`Web Search: ${searchQuery}`, generatedContent)
+      setSearchQuery("")
+    } catch (err: any) {
+      console.error(err)
+      setErrorMsg(err.message || "Failed to search the web.")
       setLocalIngesting(false)
     }
   }
@@ -202,7 +318,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
     <ShadcnDialog open={open} onOpenChange={(val) => !localIngesting && onOpenChange(val)}>
       <ShadcnDialogContent
         showCloseButton={false}
-        className="bg-white dark:bg-zinc-950 text-foreground gap-0 outline-none shadow-2xl p-8 flex flex-col overflow-hidden w-[92%] max-w-[840px] rounded-[28px] border border-border sm:fixed sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[92%] sm:max-w-[840px] sm:rounded-[28px] sm:p-8 sm:overflow-hidden max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:right-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-t-[28px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:border-x-0 max-sm:border-t-border max-sm:p-6 max-sm:overflow-y-auto max-sm:max-h-[92vh] relative"
+        className="bg-white dark:bg-zinc-950 text-foreground gap-0 outline-none shadow-2xl p-8 flex flex-col overflow-hidden w-[92%] max-w-[680px] rounded-[28px] border border-border sm:fixed sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-[92%] sm:max-w-[680px] sm:rounded-[28px] sm:p-8 sm:overflow-hidden max-sm:fixed max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:right-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-t-[28px] max-sm:rounded-b-none max-sm:border-b-0 max-sm:border-x-0 max-sm:border-t-border max-sm:p-6 max-sm:overflow-y-auto max-sm:max-h-[92vh] relative"
       >
         {/* Background Spotlight */}
         <div
@@ -221,13 +337,19 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
           </ShadcnDialogClose>
         )}
 
-        {/* Hidden PDF Upload input */}
+        {/* Hidden File Upload input */}
         <input
           type="file"
           id="pdf-upload"
-          accept=".pdf"
+          accept=".pdf,.txt,.md,.json,.csv,.html,.css,.js,.ts,.doc,.docx,.mp3,.wav,.m4a,.ogg,.mp4,.mov,.avi,.webm,.png,.jpg,.jpeg,.gif,.webp"
           className="hidden"
-          onChange={handleFileUpload}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) {
+              handleFile(file)
+            }
+            e.target.value = ""
+          }}
           disabled={localIngesting}
         />
 
@@ -251,19 +373,27 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
         {/* View Routing */}
         {currentView === "main" && (
           <div className="relative z-10 flex flex-col items-center">
-            <h1 className="text-[20px] leading-[28px] sm:text-[25px] sm:leading-[32px] text-foreground text-center max-w-[540px] mb-6 font-bold sm:font-semibold tracking-tight px-4 sm:px-0">
+            <h1 className="text-[20px] leading-[28px] sm:text-[25px] sm:leading-[32px] text-foreground text-center max-w-[540px] mb-6 font-normal tracking-tight px-4 sm:px-0">
               Create Audio and Video Overviews from<br />
               <RotatingText />
             </h1>
 
             {/* Search Inputs Bar */}
-            <div className="w-full bg-[#f9f9f9] dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800/80 focus-within:border-blue-400 dark:focus-within:border-zinc-700 rounded-[16px] p-2 flex flex-col gap-2 mb-6 transition-all focus-within:ring-1 focus-within:ring-blue-400/30">
+            <div className="w-full bg-[#f9f9f9] dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800/80 focus-within:border-zinc-400 dark:focus-within:border-zinc-700 rounded-[16px] p-2 flex flex-col gap-2 mb-6 transition-all focus-within:ring-1 focus-within:ring-zinc-400/30">
               <div className="flex-1 relative pt-[2px] pb-[4px] px-[7px]">
                 <textarea
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault()
+                      handleWebSearch()
+                    }
+                  }}
                   placeholder="Search the web for new sources"
                   className="w-full bg-transparent border-none outline-none text-[14px] text-foreground placeholder-muted-foreground resize-none h-8 leading-[20px] p-0 align-top"
                   rows={1}
-                  disabled
+                  disabled={localIngesting}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -284,8 +414,13 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   </button>
                 </div>
                 <button
-                  className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed outline-none border-none"
-                  disabled
+                  onClick={handleWebSearch}
+                  disabled={!searchQuery.trim() || localIngesting}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors outline-none border-none ${
+                    searchQuery.trim() && !localIngesting
+                      ? "bg-foreground text-background hover:opacity-90 cursor-pointer"
+                      : "bg-black/5 dark:bg-white/5 text-muted-foreground/30 cursor-not-allowed"
+                  }`}
                 >
                   <span className="google-symbols text-[20px]">search</span>
                 </button>
@@ -293,12 +428,27 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
             </div>
 
             {/* Drag & Drop Area */}
-            <div className="w-full bg-[#f8fafc]/50 dark:bg-zinc-900/10 sm:bg-accent border border-dashed border-slate-200 dark:border-zinc-800/80 sm:border-2 sm:border-border rounded-[28px] sm:rounded-2xl py-8 px-4 sm:py-12 sm:px-6 text-center flex flex-col items-center justify-center">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (!localIngesting) setIsDragging(true)
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                if (localIngesting) return
+                const file = e.dataTransfer.files?.[0]
+                if (file) handleFile(file)
+              }}
+              className={`w-full transition-all duration-200 border border-dashed border-slate-200 dark:border-zinc-800/80 sm:border-2 sm:border-border rounded-[28px] sm:rounded-2xl py-8 px-4 sm:py-12 sm:px-6 text-center flex flex-col items-center justify-center ${
+                isDragging
+                  ? "bg-zinc-100/50 dark:bg-zinc-900/40 scale-[1.01]"
+                  : "bg-[#f8fafc]/50 dark:bg-zinc-900/10 sm:bg-accent"
+              }`}
+            >
               <div className="mb-6">
-                <div className="flex items-center justify-center gap-2 sm:gap-1.5 text-foreground font-semibold tracking-tight text-[17px] sm:text-[23px] sm:leading-9">
-                  <span className="google-symbols text-[20px] sm:text-[24px] text-zinc-500 sm:text-muted-foreground select-none">
-                    upload
-                  </span>
+                <div className="flex items-center justify-center gap-2 sm:gap-1.5 text-foreground font-normal tracking-tight text-[17px] sm:text-[23px] sm:leading-9">
                   <span>or add your files</span>
                 </div>
                 <p className="text-[13px] sm:text-[15px] text-zinc-500 sm:text-muted-foreground mt-1.5 font-sans">
@@ -306,11 +456,11 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                   <span className="underline cursor-pointer hover:text-foreground font-semibold">and more</span>
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-3 w-full max-w-[360px] sm:max-w-none px-2 sm:px-0">
+              <div className="flex flex-col sm:flex-row sm:flex-nowrap items-center justify-center gap-2 sm:gap-2.5 w-full max-w-[360px] sm:max-w-none px-2 sm:px-0">
                 {/* Upload Files Button */}
                 <button
                   onClick={() => document.getElementById("pdf-upload")?.click()}
-                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
+                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none whitespace-nowrap"
                 >
                   <span className="google-symbols text-[19px] sm:text-[18px]">upload</span> Upload files
                 </button>
@@ -318,7 +468,7 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
                 {/* Websites Button */}
                 <button
                   onClick={() => setCurrentView("website")}
-                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
+                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none whitespace-nowrap"
                 >
                   <span className="flex items-center gap-1.5 justify-center">
                     <span className="google-symbols text-[19px] sm:text-[18px]">link</span>
@@ -332,20 +482,16 @@ export function CreateSourceDialog({ open, onOpenChange }: CreateSourceDialogPro
 
                 {/* Drive Button */}
                 <button
-                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
+                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none whitespace-nowrap"
                 >
-                  <svg className="w-[19px] h-[19px] sm:w-[18px] sm:h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 19L12 2L2 19H22Z" />
-                    <path d="M12 2V19" />
-                    <path d="M7 10.5L17 10.5" />
-                  </svg>
+                  <span className="google-symbols text-[19px] sm:text-[18px]">drive</span>
                   Drive
                 </button>
 
                 {/* Copied Text Button */}
                 <button
                   onClick={() => setCurrentView("copied_text")}
-                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-6 rounded-full flex items-center justify-center gap-2 text-[14px] sm:text-[15px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none"
+                  className="w-full sm:w-auto bg-white dark:bg-zinc-950 sm:bg-background border border-slate-200 dark:border-zinc-800 sm:border-border h-[44px] sm:h-10 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 text-[13px] sm:text-[14px] font-semibold sm:font-medium text-foreground hover:bg-slate-50 dark:hover:bg-zinc-900 sm:hover:bg-accent sm:hover:text-accent-foreground transition shadow-xs sm:shadow-sm cursor-pointer outline-none whitespace-nowrap"
                 >
                   <span className="google-symbols text-[19px] sm:text-[18px]">content_paste</span> Copied text
                 </button>

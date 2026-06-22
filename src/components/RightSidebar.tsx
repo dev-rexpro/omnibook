@@ -9,7 +9,9 @@ import {
   Dialog as ShadcnDialog,
   DialogContent as ShadcnDialogContent,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Citation } from "@/store/useNotebookStore"
+import { getFileIcon } from "@/lib/utils"
 
 interface Note {
   id: string
@@ -17,6 +19,79 @@ interface Note {
   content: string
   createdAt: string
   citations?: Citation[]
+}
+
+const getNoteIconDetails = (title: string, isMobile: boolean) => {
+  const lowerTitle = title.toLowerCase()
+  const defaultIcon = isMobile ? "description" : "article"
+  const defaultColorClass = isMobile ? "text-zinc-900 dark:text-zinc-100" : "text-gray-700 dark:text-foreground"
+
+  if (lowerTitle.includes("audio overview")) {
+    return { icon: "audio_magic_eraser", colorClass: "text-[#224484]" }
+  }
+  if (lowerTitle.includes("slide deck")) {
+    return { icon: "tablet", colorClass: "text-[#796731]" }
+  }
+  if (lowerTitle.includes("video overview")) {
+    return { icon: "subscriptions", colorClass: "text-[#0f5223]" }
+  }
+  if (lowerTitle.includes("mind map") || lowerTitle.includes("mindmap")) {
+    return { icon: "flowchart", colorClass: "text-[#802272]" }
+  }
+  if (lowerTitle.includes("report")) {
+    return { icon: "auto_tab_group", colorClass: "text-[#796731]" }
+  }
+  if (lowerTitle.includes("flashcard")) {
+    return { icon: "cards_star", colorClass: "text-[#8c2e2a]" }
+  }
+  if (lowerTitle.includes("quiz")) {
+    return { icon: "quiz", colorClass: "text-[#056a95]" }
+  }
+  if (lowerTitle.includes("infographic")) {
+    return { icon: "stacked_bar_chart", colorClass: "text-[#802272]" }
+  }
+  if (lowerTitle.includes("data table") || lowerTitle.includes("table")) {
+    return { icon: "table_view", colorClass: "text-[#224484]" }
+  }
+
+  return { icon: defaultIcon, colorClass: defaultColorClass }
+}
+
+const formatNoteTimeAgo = (dateString?: string) => {
+  if (!dateString) return "Just now"
+  if (!dateString.includes("-") && !dateString.includes("T")) {
+    return dateString
+  }
+  try {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    if (diffMs < 0) return "Just now"
+    
+    const diffMins = Math.floor(diffMs / (60 * 1000))
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays}d ago`
+  } catch (e) {
+    return "Just now"
+  }
+}
+
+const getNoteSubtitle = (note: Note) => {
+  const uniqueSources = note.citations && note.citations.length > 0
+    ? new Set(note.citations.map((c) => c.filename)).size
+    : 0
+
+  const timeAgoStr = formatNoteTimeAgo(note.createdAt)
+  if (uniqueSources > 0) {
+    return `${uniqueSources} source${uniqueSources > 1 ? "s" : ""} · ${timeAgoStr}`
+  }
+  return timeAgoStr
 }
 
 // ─── Custom Citation Badge Component with Hover Card ───
@@ -46,7 +121,7 @@ const CitationBadge = ({ num, citations }: { num: number; citations?: Citation[]
         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-popover border border-border text-popover-foreground rounded-xl shadow-xl z-50 text-[12px] leading-relaxed flex flex-col gap-1.5 animate-slide-in pointer-events-none">
           <span className="font-semibold text-foreground flex items-center gap-1.5 border-b border-border/50 pb-1">
             <span className="google-symbols text-[14px] text-primary">
-              {citation.filename.toLowerCase().endsWith(".pdf") ? "drive_pdf" : "description"}
+              {getFileIcon(citation.filename)}
             </span>
             <span className="truncate max-w-[200px]">{citation.filename}</span>
           </span>
@@ -75,25 +150,22 @@ const parseCitations = (text: string, citations?: Citation[]): React.ReactNode =
 
 // ─── Premium Inline Markdown Formatter ───
 const parseInlineMarkdown = (text: string, citations?: Citation[]): React.ReactNode => {
-  // Split inline code blocks
   const parts = text.split(/`([^`]+)`/)
   return parts.map((part, index) => {
     if (index % 2 === 1) {
       return (
-        <code key={index} className="bg-muted px-1.5 py-0.5 rounded font-mono text-[13px] text-pink-600 dark:text-pink-400 font-semibold">
+        <code key={index} className="bg-muted px-1.5 py-0.5 rounded font-mono text-[13px] text-zinc-900 dark:text-zinc-100 font-semibold">
           {part}
         </code>
       )
     }
     
-    // Parse bold **text**
     const boldParts = part.split(/\*\*([^*]+)\*\*/)
     return boldParts.map((bPart, bIdx) => {
       if (bIdx % 2 === 1) {
         return <strong key={bIdx} className="font-bold text-foreground">{bPart}</strong>
       }
       
-      // Parse italic *text*
       const italicParts = bPart.split(/\*([^*]+)\*/)
       return italicParts.map((iPart, iIdx) => {
         if (iIdx % 2 === 1) {
@@ -111,7 +183,6 @@ const formatParagraphs = (text: string, citations?: Citation[]): React.ReactNode
     const trimmed = para.trim()
     if (!trimmed) return null
 
-    // Markdown Headers
     if (trimmed.startsWith("### ")) {
       return <h3 key={pIdx} className="text-[15px] font-bold text-foreground mt-4 mb-2">{parseInlineMarkdown(trimmed.substring(4), citations)}</h3>
     }
@@ -122,7 +193,6 @@ const formatParagraphs = (text: string, citations?: Citation[]): React.ReactNode
       return <h1 key={pIdx} className="text-[19px] font-bold text-foreground mt-4 mb-2">{parseInlineMarkdown(trimmed.substring(2), citations)}</h1>
     }
 
-    // Lists (bullets or numbers)
     const lines = trimmed.split("\n")
     const isList = lines.every(line => {
       const l = line.trim()
@@ -151,7 +221,6 @@ const formatParagraphs = (text: string, citations?: Citation[]): React.ReactNode
 const formatMessageText = (text: string, citations?: Citation[]) => {
   if (!text) return null
 
-  // Split block code fences
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g
   const elements: React.ReactNode[] = []
   let lastIndex = 0
@@ -197,17 +266,16 @@ interface RightSidebarProps {
 }
 
 const STUDIO_ITEMS = [
-  { icon: "audio_magic_eraser", label: "Audio Overview" },
-  { icon: "tablet", label: "Slide Deck" },
-  { icon: "subscriptions", label: "Video Overview" },
-  { icon: "flowchart", label: "Mind Map" },
-  { icon: "auto_tab_group", label: "Reports" },
-  { icon: "cards_star", label: "Flashcards" },
-  { icon: "quiz", label: "Quiz" },
-  { icon: "stacked_bar_chart", label: "Infographic" },
-  { icon: "table_view", label: "Data Table" },
+  { icon: "audio_magic_eraser", bg: "bg-[#edeffa]", text: "text-[#224484]", hoverGif: "gif/ao_hover_2x.gif", label: "Audio Overview" },
+  { icon: "tablet", bg: "bg-[#f2f2e8]", text: "text-[#796731]", hoverGif: "gif/slides_hover_2x.gif", label: "Slide Deck" },
+  { icon: "subscriptions", bg: "bg-[#e1f1e5]", text: "text-[#0f5223]", hoverGif: "gif/vo_hover_2x.gif", label: "Video Overview" },
+  { icon: "flowchart", bg: "bg-[#f0e9ef]", text: "text-[#802272]", hoverGif: "gif/mindmap_hover_2x.gif", label: "Mind Map" },
+  { icon: "auto_tab_group", bg: "bg-[#f2f2e8]", text: "text-[#796731]", hoverGif: "gif/report_hover_2x.gif", label: "Reports" },
+  { icon: "cards_star", bg: "bg-[#f7edeb]", text: "text-[#8c2e2a]", hoverGif: "gif/flashcards_hover_2x.gif", label: "Flashcards" },
+  { icon: "quiz", bg: "bg-[#def1f7]", text: "text-[#056a95]", hoverGif: "gif/quizzes_hover_2x.gif", label: "Quiz" },
+  { icon: "stacked_bar_chart", bg: "bg-[#f0e9ef]", text: "text-[#802272]", hoverGif: "gif/infographics_hover_2x.gif", label: "Infographic" },
+  { icon: "table_view", bg: "bg-[#edeffa]", text: "text-[#224484]", hoverGif: "gif/table_hover_2x.gif", label: "Data Table" },
 ]
-
 
 export function RightSidebar({
   isCollapsed,
@@ -273,7 +341,7 @@ export function RightSidebar({
             <div className="absolute bottom-0 left-0 right-0 border-t border-border px-4 h-14 flex items-center justify-end bg-background z-20">
               <button
                 onClick={() => console.log("Convert to source:", activeNote.title)}
-                className="bg-card border border-border h-9 px-4 rounded-full flex items-center justify-center gap-1 text-[11px] font-medium text-foreground hover:bg-accent transition shadow-sm cursor-pointer outline-none flex-shrink-0 font-sans"
+                className="bg-card border border-border h-9 px-4 rounded-full flex items-center justify-center gap-1.5 text-[12px] font-medium text-foreground hover:bg-accent transition shadow-sm cursor-pointer outline-none flex-shrink-0 font-sans"
               >
                 <span className="google-symbols text-[14px]">convert_to_text</span>
                 Convert to source
@@ -285,38 +353,25 @@ export function RightSidebar({
           <div className="flex-1 flex flex-col overflow-hidden relative">
             <div className="flex-1 overflow-y-auto flex flex-col pb-24">
               {/* Items grid */}
-              <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0">
+              <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0 studio-grid">
                 {STUDIO_ITEMS.map((item, index) => (
                   <div
                     key={index}
                     onClick={() => {
                       if (onChevronClick) onChevronClick(item.label)
                     }}
-                    className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
+                    className={`${item.bg} ${item.text} rounded-xl p-3 h-[64px] studio-btn flex justify-between items-center cursor-pointer hover:brightness-95 transition`}
                   >
                     <div className="flex flex-col gap-1 min-w-0 flex-1">
-                      <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
-                        {item.icon}
-                      </span>
-                      <span className="text-[12px] font-semibold text-foreground truncate font-sans animate-none" title={item.label}>
-                        {item.label}
-                      </span>
+                      <span className="google-symbols text-[16px]">{item.icon}</span>
+                      <img src={item.hoverGif} className="hover-gif" alt={`${item.label} hover animation`} />
+                      <span className="text-xs font-medium truncate font-sans">{item.label}</span>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (onChevronClick) onChevronClick(item.label)
-                      }}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer outline-none border-none flex-shrink-0 ${
-                        item.label === "Video Overview" || item.label === "Reports"
-                          ? "bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground"
-                          : "bg-slate-100 dark:bg-zinc-800/70 hover:bg-slate-200 dark:hover:bg-zinc-700 text-muted-foreground hover:text-foreground"
-                      }`}
+                    <div
+                      className="w-7 h-7 rounded-full bg-gray-100 dark:bg-muted flex items-center justify-center flex-shrink-0 text-current"
                     >
-                      <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
-                        chevron_right
-                      </span>
-                    </button>
+                      <span className="google-symbols text-[16px]">chevron_right</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -341,8 +396,8 @@ export function RightSidebar({
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
-                              description
+                            <span className={`google-symbols text-[20px] flex-shrink-0 select-none ${getNoteIconDetails(note.title, true).colorClass}`}>
+                              {getNoteIconDetails(note.title, true).icon}
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col gap-0.5 min-w-0">
@@ -350,7 +405,7 @@ export function RightSidebar({
                                   {note.title}
                                 </span>
                                 <span className="text-[11px] text-muted-foreground font-medium font-sans">
-                                  {note.createdAt}
+                                  {getNoteSubtitle(note)}
                                 </span>
                               </div>
                             </div>
@@ -418,15 +473,17 @@ export function RightSidebar({
             </div>
 
             {/* Floating button */}
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
-              <button
-                onClick={onAddNoteClick}
-                className="bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950 h-10 px-5 rounded-full flex items-center gap-2 text-[14px] font-semibold shadow-lg hover:scale-105 transition-all pointer-events-auto cursor-pointer outline-none border-none font-sans"
-              >
-                <span className="google-symbols text-[18px]">edit_note</span>
-                <span>Add note</span>
-              </button>
-            </div>
+            {selectedNoteId === null && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30">
+                <button
+                  onClick={onAddNoteClick}
+                  className="bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950 h-10 px-5 rounded-full flex items-center gap-2 text-[14px] font-semibold shadow-lg hover:scale-105 transition-all pointer-events-auto cursor-pointer outline-none border-none font-sans"
+                >
+                  <span className="google-symbols text-[18px]">edit_note</span>
+                  <span>Add note</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -471,11 +528,9 @@ export function RightSidebar({
 
   return (
     <section
-      id="sidebarStudio"
-      className={`sidebar flex-shrink-0 bg-sidebar text-sidebar-foreground border border-sidebar-border rounded-2xl flex flex-col relative shadow-sm overflow-hidden transition-all duration-300 ${
+      id="panel-studio"
+      className={`sidebar flex-shrink-0 bg-sidebar text-sidebar-foreground border border-sidebar-border rounded-2xl flex flex-col relative shadow-sm overflow-hidden w-[320px] lg:w-[340px] ${
         isCollapsed ? "collapsed" : ""
-      } ${
-        "w-[360px] lg:w-[370px]"
       }`}
     >
       {/* 1. NOTE DETAIL VIEW STATE */}
@@ -525,7 +580,7 @@ export function RightSidebar({
             </div>
           </div>
 
-          {/* Footer Area inside sidebar - side-by-side elements in a single row */}
+          {/* Footer Area inside sidebar */}
           <div className="absolute bottom-0 left-0 right-0 border-t border-sidebar-border px-4 h-14 flex items-center justify-end bg-sidebar z-20">
             <button
               onClick={() => console.log("Convert to source:", activeNote.title)}
@@ -555,149 +610,126 @@ export function RightSidebar({
 
           {/* Expanded Scroll Body */}
           <div className="sidebar-content w-full flex-1 overflow-y-auto flex flex-col pb-24">
-            <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0">
+            <div className="grid grid-cols-2 gap-2.5 p-4 flex-shrink-0 studio-grid">
               {STUDIO_ITEMS.map((item, index) => (
                 <div
                   key={index}
                   onClick={() => {
                     if (onChevronClick) onChevronClick(item.label)
                   }}
-                  className="border border-border bg-card hover:bg-accent text-foreground rounded-xl p-3 h-[64px] flex justify-between items-center cursor-pointer transition shadow-xs group/item"
+                  className={`${item.bg} ${item.text} rounded-xl p-3 h-[64px] studio-btn flex justify-between items-center cursor-pointer hover:brightness-95 transition`}
                 >
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
-                      {item.icon}
-                    </span>
-                    <span className="text-[13px] font-semibold text-foreground truncate font-sans" title={item.label}>
-                      {item.label}
-                    </span>
+                    <span className="google-symbols text-[16px]">{item.icon}</span>
+                    <img src={item.hoverGif} className="hover-gif" alt={`${item.label} hover animation`} />
+                    <span className="text-xs font-medium truncate font-sans">{item.label}</span>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (onChevronClick) onChevronClick(item.label)
-                    }}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer outline-none border-none flex-shrink-0 ${
-                      item.label === "Video Overview" || item.label === "Reports"
-                        ? "bg-transparent hover:bg-accent/50 text-muted-foreground hover:text-foreground"
-                        : "bg-slate-100 dark:bg-zinc-800/70 hover:bg-slate-200 dark:hover:bg-zinc-700 text-muted-foreground hover:text-foreground"
-                    }`}
+                  <div
+                    className="w-7 h-7 rounded-full bg-gray-100 dark:bg-muted flex items-center justify-center flex-shrink-0 text-current"
                   >
-                    <span className="google-symbols text-[16px] text-muted-foreground group-hover:text-foreground">
-                      chevron_right
-                    </span>
-                  </button>
+                    <span className="google-symbols text-[16px]">chevron_right</span>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {notes.length > 0 ? (
-              <div className="flex-1 flex flex-col gap-3 px-4 pb-20">
-                <div className="text-[11px] font-bold text-sidebar-foreground/50 px-1 uppercase tracking-wider select-none font-sans">
-                  Notes
-                </div>
-                <div className="flex flex-col gap-2">
-                  {notes.map((note) => {
-                    const isSelected = selectedNoteId === note.id
-                    return (
-                      <div
-                        key={note.id}
-                        onClick={() => onNoteSelect(note.id)}
-                        className={`w-full flex items-center justify-between p-2.5 border rounded-xl transition-all group cursor-pointer ${
-                          isSelected
-                            ? "bg-sidebar-accent/10 border-sidebar-border hover:bg-sidebar-accent/30"
-                            : "bg-sidebar-accent/5 border-sidebar-border/50 opacity-60 hover:opacity-85"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className="google-symbols text-[20px] text-zinc-900 dark:text-zinc-100 flex-shrink-0 select-none">
-                            description
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col gap-0.5 min-w-0">
-                              <span className="text-[13px] font-semibold text-sidebar-foreground truncate block font-sans" title={note.title}>
-                                {note.title}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground font-medium font-sans">
-                                {note.createdAt}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+            <div className="mx-4 border-b border-sidebar-border"></div>
 
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                onClick={(e) => e.stopPropagation()}
-                                className="opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 text-sidebar-foreground/60 hover:text-foreground w-7 h-7 rounded-full flex items-center justify-center transition cursor-pointer outline-none bg-transparent hover:bg-sidebar-accent border-none"
-                              >
-                                <span className="google-symbols text-[18px]">more_vert</span>
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              sideOffset={4}
-                              className="w-[260px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
-                            >
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  console.log("Convert to source:", note.title)
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                              >
-                                <span className="google-symbols text-[18px] text-muted-foreground">convert_to_text</span>
-                                <span>Convert to source</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  console.log("Convert all notes to source")
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                              >
-                                <span className="google-symbols text-[18px] text-muted-foreground">library_add</span>
-                                <span>Convert all notes to source</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  console.log("Export to Docs:", note.title)
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                              >
-                                <span className="google-symbols text-[18px] text-muted-foreground">description</span>
-                                <span>Export to Docs</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  console.log("Export to Sheets:", note.title)
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
-                              >
-                                <span className="google-symbols text-[18px] text-muted-foreground">table_view</span>
-                                <span>Export to Sheets</span>
-                              </DropdownMenuItem>
-                              <div className="h-px bg-border my-1" />
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setNoteToDeleteId(note.id)
-                                }}
-                                className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
-                              >
-                                <span className="google-symbols text-[18px]">delete</span>
-                                <span>Delete</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+            {notes.length > 0 ? (
+              <div className="p-4 pt-2 flex flex-col gap-1">
+                {notes.map((note) => {
+                  const isSelected = selectedNoteId === note.id
+                  return (
+                    <div
+                      key={note.id}
+                      onClick={() => onNoteSelect(note.id)}
+                      className={`flex items-center p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-muted transition cursor-pointer group ${
+                        isSelected ? "bg-gray-100 dark:bg-muted" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                        <span className={`google-symbols text-[24px] flex-shrink-0 select-none ${getNoteIconDetails(note.title, false).colorClass}`}>
+                          {getNoteIconDetails(note.title, false).icon}
+                        </span>
+                        <div className="flex flex-col justify-center min-w-0">
+                          <span className="text-sm font-medium text-gray-900 dark:text-foreground truncate block font-sans" title={note.title}>
+                            {note.title}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">
+                            {getNoteSubtitle(note)}
+                          </span>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-muted-foreground hover:bg-gray-200 dark:hover:bg-accent opacity-0 group-hover:opacity-100 transition shrink-0 cursor-pointer outline-none bg-transparent border-none"
+                          >
+                            <span className="google-symbols text-[20px]">more_vert</span>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          sideOffset={4}
+                          className="w-[260px] bg-popover text-popover-foreground border border-border rounded-lg shadow-lg py-1.5 z-50 text-[13px] flex flex-col font-sans outline-none"
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log("Convert to source:", note.title)
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                          >
+                            <span className="google-symbols text-[18px] text-muted-foreground">convert_to_text</span>
+                            <span>Convert to source</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log("Convert all notes to source")
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                          >
+                            <span className="google-symbols text-[18px] text-muted-foreground">library_add</span>
+                            <span>Convert all notes to source</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log("Export to Docs:", note.title)
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                          >
+                            <span className="google-symbols text-[18px] text-muted-foreground">description</span>
+                            <span>Export to Docs</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              console.log("Export to Sheets:", note.title)
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent hover:text-accent-foreground text-left w-full transition-colors outline-none cursor-pointer font-sans"
+                          >
+                            <span className="google-symbols text-[18px] text-muted-foreground">table_view</span>
+                            <span>Export to Sheets</span>
+                          </DropdownMenuItem>
+                          <div className="h-px bg-border my-1" />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setNoteToDeleteId(note.id)
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-2 hover:bg-destructive/10 hover:text-destructive text-left w-full transition-colors outline-none cursor-pointer text-destructive font-sans"
+                          >
+                            <span className="google-symbols text-[18px]">delete</span>
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )
+                })}
               </div>
             ) : (
               /* Empty State */
@@ -720,22 +752,28 @@ export function RightSidebar({
       )}
 
       {/* Collapsed Sidebar Miniature Icons */}
-      <div className="collapsed-icons absolute top-16 left-0 right-0 flex flex-col items-center gap-4 p-2 overflow-y-auto max-h-[calc(100vh-200px)] z-20 pb-20 no-scrollbar">
-        {STUDIO_ITEMS.map((item, index) => (
-          <div
-            key={index}
-            className="w-10 h-10 text-zinc-600 rounded-lg flex items-center justify-center cursor-pointer hover:bg-zinc-100 hover:text-zinc-900 transition relative group/tip flex-shrink-0"
-          >
-            <span className="google-symbols text-[18px]">{item.icon}</span>
-            <div className="absolute right-12 bg-zinc-900 text-white text-[13px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition pointer-events-none z-30 font-sans">
-              {item.label}
-            </div>
-          </div>
-        ))}
-      </div>
+      <TooltipProvider>
+        <div className="collapsed-icons absolute top-16 left-0 right-0 flex flex-col items-center gap-4 p-2 overflow-y-auto max-h-[calc(100vh-200px)] z-20 pb-20 no-scrollbar">
+          {STUDIO_ITEMS.map((item, index) => (
+            <Tooltip key={index}>
+              <TooltipTrigger asChild>
+                <div
+                  onClick={() => onChevronClick && onChevronClick(item.label)}
+                  className="w-10 h-10 text-gray-700 dark:text-foreground rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-muted transition relative flex-shrink-0"
+                >
+                  <span className="google-symbols text-[20px]">{item.icon}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <span>{item.label}</span>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
 
-      {/* Floating Add Note button: ALWAYS floats at the bottom in collapsed/expanded main state */}
-      {!isCollapsed && selectedNoteId === null && (
+      {/* Floating Add Note button */}
+      {selectedNoteId === null && (
         <div
           className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none z-30"
           id="btnContainerAddNote"
@@ -744,6 +782,7 @@ export function RightSidebar({
             id="btnTextAddNote"
             onClick={onAddNoteClick}
             className="bg-primary text-primary-foreground h-[40px] px-[20px] rounded-full flex items-center gap-2 text-[15px] font-medium shadow-lg hover:scale-105 transition-all pointer-events-auto cursor-pointer outline-none border-none font-sans"
+            data-tooltip="Add note"
           >
             <span className="google-symbols text-[18px] flex-shrink-0">
               sticky_note_2

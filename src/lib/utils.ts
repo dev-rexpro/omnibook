@@ -67,3 +67,36 @@ export function recursiveSplitText(text: string, chunkSize = 1000, chunkOverlap 
   return split(text, separators)
 }
 
+export function getFileIcon(filename: string): string {
+  const lower = filename.toLowerCase()
+  if (lower.startsWith("website (") || lower.startsWith("http://") || lower.startsWith("https://")) {
+    if (lower.includes("youtube.com") || lower.includes("youtu.be")) {
+      return "play_circle"
+    }
+    return "language"
+  }
+  if (lower.startsWith("text snippet (")) {
+    return "content_paste"
+  }
+  if (lower.endsWith(".pdf")) {
+    return "drive_pdf"
+  }
+  if (lower.endsWith(".md")) {
+    return "article"
+  }
+  if (lower.endsWith(".txt")) {
+    return "description"
+  }
+  if (lower.endsWith(".docx") || lower.endsWith(".doc")) {
+    return "description"
+  }
+  if (lower.endsWith(".mp3") || lower.endsWith(".wav") || lower.endsWith(".m4a") || lower.endsWith(".ogg")) {
+    return "audio_file"
+  }
+  if (lower.endsWith(".mp4") || lower.endsWith(".mov") || lower.endsWith(".avi") || lower.endsWith(".webm")) {
+    return "video_file"
+  }
+  return "description"
+}
+
+
