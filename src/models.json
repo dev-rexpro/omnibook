@@ -18,5 +18,13 @@
   {
     "id": "gemma-4-31b-it",
     "label": "Gemma 4 31B IT"
+  },
+  {
+    "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "label": "Llama 4 Scout"
+  },
+  {
+    "id": "openai/gpt-oss-20b",
+    "label": "GPT OSS 20B"
   }
 ]

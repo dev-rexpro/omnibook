@@ -2,7 +2,6 @@ import os
 import io
 import json
 import logging
-import math
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,9 +9,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import httpx
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 from dotenv import load_dotenv
+
+# Import modular backend components
+from src.embeddings import get_embedding_model
+from src.vectorstore import get_vectorstore, add_documents_to_store, delete_document_from_store, query_store
+from src.loader import split_text_to_documents
+from src.rag import rewrite_query
 
 # Load local environment variables if present
 load_dotenv()
@@ -33,89 +37,8 @@ if not GEMINI_API_KEY:
 else:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# Pure Python Simple Vector DB to avoid ChromaDB compiler dependency issues on Windows/Python 3.13
-class SimpleVectorDB:
-    def __init__(self, file_path: str = "vector_db.json"):
-        self.file_path = file_path
-        if not os.path.exists(self.file_path):
-            self.save_data([])
-
-    def load_data(self) -> List[Dict[str, Any]]:
-        try:
-            if os.path.exists(self.file_path):
-                with open(self.file_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading vector DB: {e}")
-        return []
-
-    def save_data(self, data: List[Dict[str, Any]]):
-        try:
-            with open(self.file_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving vector DB: {e}")
-
-    def add_documents(self, notebook_id: str, document_id: str, filename: str, ids: List[str], documents: List[str], embeddings: List[List[float]]):
-        data = self.load_data()
-        
-        # Remove old chunks for this document if they exist (prevents duplicates)
-        data = [item for item in data if item.get("document_id") != document_id]
-        
-        for cid, doc, emb in zip(ids, documents, embeddings):
-            data.append({
-                "id": cid,
-                "notebook_id": notebook_id,
-                "document_id": document_id,
-                "filename": filename,
-                "content": doc,
-                "embedding": emb
-            })
-        self.save_data(data)
-
-    def query(self, notebook_id: str, query_embedding: List[float], n_results: int = 6, document_ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-        data = self.load_data()
-        
-        # 1. Filter by notebook_id
-        filtered = [item for item in data if item.get("notebook_id") == notebook_id]
-        
-        # 2. Filter by document_ids if provided
-        if document_ids:
-            filtered = [item for item in filtered if item.get("document_id") in document_ids]
-            
-        if not filtered:
-            return []
-            
-        # 3. Calculate cosine similarity
-        results = []
-        for item in filtered:
-            emb = item.get("embedding")
-            if not emb:
-                continue
-            
-            # Cosine similarity calculation
-            dot_product = sum(x * y for x, y in zip(query_embedding, emb))
-            magnitude_q = math.sqrt(sum(x * x for x in query_embedding))
-            magnitude_e = math.sqrt(sum(x * x for x in emb))
-            
-            if magnitude_q == 0 or magnitude_e == 0:
-                similarity = 0.0
-            else:
-                similarity = dot_product / (magnitude_q * magnitude_e)
-                
-            results.append({
-                "chunk": item,
-                "similarity": similarity
-            })
-            
-        # 4. Sort by similarity descending
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-        
-        # 5. Format to return clean list
-        return [res["chunk"] for res in results[:n_results]]
-
 # Initialize FastAPI
-app = FastAPI(title="Omnibook Hybrid RAG Backend")
+app = FastAPI(title="Omnibook Chroma RAG Backend")
 
 # Configure CORS
 app.add_middleware(
@@ -126,13 +49,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize our Simple Vector Database
-vector_db = SimpleVectorDB()
-
-# Initialize SentenceTransformer model (all-MiniLM-L6-v2 produces 384-dimensional embeddings)
-logger.info("Loading SentenceTransformer model 'all-MiniLM-L6-v2'...")
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-logger.info("Model loaded successfully.")
+# Initialize ChromaDB Vector Store
+logger.info("Initializing ChromaDB Vector Store...")
+embedding_model = get_embedding_model()
+vector_db = get_vectorstore(embedding_model)
+logger.info("ChromaDB initialized successfully.")
 
 class IngestRequest(BaseModel):
     notebook_id: str
@@ -145,32 +66,8 @@ class ChatRequest(BaseModel):
     query: str
     notebook_id: str
     document_ids: Optional[List[str]] = None
-    model_config: Optional[dict] = None
-
-def split_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> List[str]:
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = min(start + chunk_size, len(text))
-        if end < len(text):
-            boundary = text.rfind("\n\n", start + chunk_size // 2, end)
-            if boundary == -1:
-                boundary = text.rfind("\n", start + chunk_size // 2, end)
-            if boundary == -1:
-                boundary = text.rfind(". ", start + chunk_size // 2, end)
-            if boundary == -1:
-                boundary = text.rfind(" ", start + chunk_size // 2, end)
-            
-            if boundary != -1:
-                end = boundary + 1
-        
-        chunk = text[start:end].strip()
-        if chunk:
-            chunks.append(chunk)
-        start = end - chunk_overlap
-        if start >= len(text) - chunk_overlap:
-            break
-    return chunks
+    llm_config: Optional[dict] = None
+    chat_id: Optional[str] = None
 
 def update_document_status(document_id: str, status: str, auth_header: str):
     url = f"{SUPABASE_URL}/rest/v1/documents?id=eq.{document_id}"
@@ -248,6 +145,39 @@ You MUST return your response as a valid JSON object matching this schema:
     except Exception as e:
         logger.error(f"Error checking/generating notebook guide: {e}")
 
+def fetch_chat_history(chat_id: str, auth_header: str) -> List[Dict[str, str]]:
+    if not chat_id:
+        return []
+    url = f"{SUPABASE_URL}/rest/v1/messages?chat_id=eq.{chat_id}&order=created_at.asc"
+    headers = {
+        "Authorization": auth_header,
+        "apikey": SUPABASE_ANON_KEY
+    }
+    try:
+        logger.info(f"Fetching chat history from Supabase for chat_id={chat_id}")
+        response = httpx.get(url, headers=headers)
+        response.raise_for_status()
+        messages = response.json()
+        
+        chat_history = []
+        last_question = None
+        
+        for msg in messages:
+            role = msg.get("role")
+            content = msg.get("content", "")
+            if role == "user":
+                last_question = content
+            elif role == "model" and last_question is not None:
+                chat_history.append({
+                    "question": last_question,
+                    "answer": content
+                })
+                last_question = None
+        return chat_history
+    except Exception as e:
+        logger.error(f"Failed to fetch chat history: {e}")
+        return []
+
 def process_ingestion(req: IngestRequest, auth_header: str):
     try:
         text = ""
@@ -275,30 +205,26 @@ def process_ingestion(req: IngestRequest, auth_header: str):
         if not text.strip():
             raise ValueError("Extracted document text is empty.")
             
-        # 2. Chunk text
-        chunks = split_text(text)
-        if not chunks:
-            raise ValueError("No valid text chunks generated.")
-            
-        # 3. Store in SimpleVectorDB
-        ids = [f"{req.document_id}_chunk_{i}" for i in range(len(chunks))]
-        embeddings = [embedding.tolist() for embedding in embedding_model.encode(chunks)]
-        
-        vector_db.add_documents(
+        # 2. Delete any existing chunks for this document in ChromaDB
+        delete_document_from_store(vector_db, req.document_id)
+
+        # 3. Chunk text and convert to LangChain Document objects
+        langchain_docs = split_text_to_documents(
+            text=text,
             notebook_id=req.notebook_id,
             document_id=req.document_id,
-            filename=req.filename,
-            ids=ids,
-            documents=chunks,
-            embeddings=embeddings
+            filename=req.filename
         )
         
-        # 4. Mark status completed
+        # 4. Store in ChromaDB
+        add_documents_to_store(vector_db, langchain_docs)
+        
+        # 5. Mark status completed in Supabase
         update_document_status(req.document_id, "completed", auth_header)
         logger.info(f"Document {req.document_id} ingested successfully.")
         
-        # 5. Check and generate guide details
-        check_and_generate_notebook_guide(req.notebook_id, req.document_id, chunks, auth_header)
+        # 6. Check and generate guide details
+        check_and_generate_notebook_guide(req.notebook_id, req.document_id, [d.page_content for d in langchain_docs], auth_header)
         
     except Exception as e:
         logger.error(f"Ingestion process failed: {e}")
@@ -325,30 +251,41 @@ def ingest_document(req: IngestRequest, authorization: Optional[str] = Header(No
 def chat(req: ChatRequest, authorization: Optional[str] = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured on the server")
         
-    # Get query embedding
-    query_embedding = embedding_model.encode(req.query).tolist()
+    # Model configuration
+    model_name = "gemini-2.5-flash"
+    temperature = 0.7
+    if req.llm_config:
+        model_name = req.llm_config.get("model_name", model_name)
+        temperature = req.llm_config.get("temperature", temperature)
+
+    # 1. Fetch chat history
+    chat_history = []
+    if req.chat_id:
+        chat_history = fetch_chat_history(req.chat_id, authorization)
+        
+    # 2. Rewrite query using memory
+    search_query = rewrite_query(req.query, chat_history, GEMINI_API_KEY)
     
-    # Query SimpleVectorDB
+    # 3. Query ChromaDB using search_query and document_ids filter
     try:
-        matched_results = vector_db.query(
+        matched_results = query_store(
+            vectorstore=vector_db,
+            query=search_query,
             notebook_id=req.notebook_id,
-            query_embedding=query_embedding,
-            n_results=6,
-            document_ids=req.document_ids
+            document_ids=req.document_ids,
+            k=6
         )
     except Exception as e:
         logger.error(f"Vector DB query failed: {e}")
         matched_results = []
         
     matched_chunks = []
-    for item in matched_results:
+    for doc in matched_results:
         matched_chunks.append({
-            "content": item["content"],
-            "document_id": item["document_id"],
-            "filename": item["filename"]
+            "content": doc.page_content,
+            "document_id": doc.metadata.get("document_id"),
+            "filename": doc.metadata.get("filename", "Unknown")
         })
             
     # Build citations list
@@ -366,11 +303,20 @@ def chat(req: ChatRequest, authorization: Optional[str] = Header(None)):
         context_parts.append(f'[Source {idx + 1} - from document "{chunk["filename"]}"]:\n{chunk["content"]}')
     context_text = "\n\n---\n\n".join(context_parts) if context_parts else "No relevant documents found."
     
+    # Interleave history for prompt
+    history_text = ""
+    for turn in chat_history:
+        history_text += f"User: {turn['question']}\n"
+        history_text += f"Assistant: {turn['answer']}\n"
+    
     # Master prompt
-    master_prompt = f"""You are a helpful AI assistant. You have access to the following documents in the user's notebook. Use the provided context to answer the user's query.
+    master_prompt = f"""You are a helpful AI assistant. You have access to the following documents in the user's notebook. Use the provided context and conversation history to answer the user's query.
 If the context does not contain enough information to answer, state that you cannot find the answer in the provided documents. Rely ONLY on the provided context. Do not make up facts.
 
 You MUST include inline citations in your response referencing the sources. Whenever you state a fact or detail from a source in the context, append its source number at the end of the sentence or clause using brackets, e.g. [1], [2]. If multiple sources apply, output them next to each other like [1][2]. Do not combine them inside one bracket like [1,2]. The citation numbers MUST correspond to the 1-based source indices in the Context below.
+
+Conversation History:
+{history_text if history_text else "(No previous history)"}
 
 Context:
 {context_text}
@@ -383,14 +329,8 @@ At the very end of your answer, you MUST generate exactly 3 relevant follow-up q
 Example:
 [SUGGESTED_QUESTIONS]: question 1 | question 2 | question 3"""
 
-    # Model configuration
-    model_name = "gemini-2.5-flash"
-    temperature = 0.7
-    if req.model_config:
-        model_name = req.model_config.get("model_name", model_name)
-        temperature = req.model_config.get("temperature", temperature)
-        
-    model = genai.GenerativeModel(model_name)
+    is_groq = "llama-4" in model_name or "gpt-oss" in model_name.lower()
+    is_gemini = "gemini" in model_name.lower()
     
     def event_generator():
         # 1. Yield citations first
@@ -398,18 +338,65 @@ Example:
         
         accumulated = ""
         try:
-            # Generate content stream using GenerativeModel
-            response = model.generate_content(
-                master_prompt,
-                generation_config={"temperature": temperature},
-                stream=True
-            )
-            for chunk in response:
-                text = chunk.text
-                if text:
-                    accumulated += text
-                    yield f"data: {json.dumps({'text': text})}\n\n"
-                    
+            if is_groq:
+                # Direct streaming completions for Groq
+                api_key = os.getenv("GROQ_API_KEY")
+                if not api_key:
+                    raise ValueError("GROQ_API_KEY is not configured in backend environment.")
+                api_url = "https://api.groq.com/openai/v1/chat/completions"
+                
+                # Map model name
+                actual_model = model_name
+                if "llama-4" in model_name:
+                    actual_model = "llama-3.3-70b-versatile"
+                elif "gpt-oss" in model_name:
+                    actual_model = "llama-3.3-70b-versatile"
+                
+                headers = {
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "model": actual_model,
+                    "messages": [
+                        {"role": "user", "content": master_prompt}
+                    ],
+                    "temperature": temperature,
+                    "stream": True
+                }
+                with httpx.stream("POST", api_url, headers=headers, json=payload, timeout=60.0) as r:
+                    r.raise_for_status()
+                    for line in r.iter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:].strip()
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data_str)
+                                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    accumulated += content
+                                    yield f"data: {json.dumps({'text': content})}\n\n"
+                            except Exception as parse_err:
+                                logger.error(f"Error parsing Groq chunk: {parse_err}")
+            elif is_gemini:
+                if not GEMINI_API_KEY:
+                    raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not configured on the server")
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(
+                    master_prompt,
+                    generation_config={"temperature": temperature},
+                    stream=True
+                )
+                for chunk in response:
+                    text = chunk.text
+                    if text:
+                        accumulated += text
+                        yield f"data: {json.dumps({'text': text})}\n\n"
+            else:
+                raise ValueError(f"Unsupported model config: {model_name}")
+                
             # Extract suggested questions
             clean_text = accumulated
             suggested = []

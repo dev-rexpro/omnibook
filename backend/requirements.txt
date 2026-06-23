@@ -9,3 +9,8 @@ python-dotenv
 httpx>=0.24.0,<0.26.0
 jinja2
 python-multipart
+langchain-chroma
+langchain-huggingface
+langchain-core
+langchain-text-splitters
+numpy<2.0.0

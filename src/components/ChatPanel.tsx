@@ -171,7 +171,8 @@ const formatParagraphs = (text: string, citations?: Citation[]): React.ReactNode
 const formatMessageText = (text: string, citations?: Citation[]) => {
   if (!text) return null
 
-  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g
+  // Allow optional whitespace/spaces after language identifier before newline
+  const codeBlockRegex = /```(\w*)[ \t]*\r?\n([\s\S]*?)```/g
   const elements: React.ReactNode[] = []
   let lastIndex = 0
   let match
@@ -184,12 +185,22 @@ const formatMessageText = (text: string, citations?: Citation[]) => {
     const language = match[1] || "code"
     const codeContent = match[2]
     elements.push(
-      <pre key={`code-${match.index}`} className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 p-4 rounded-xl font-mono text-[13px] my-3 overflow-x-auto shadow-inner border border-border/30 relative group">
-        <div className="absolute top-2 right-3 text-[10px] text-zinc-500 uppercase font-semibold select-none">
-          {language}
+      <div key={`code-${match.index}`} className="my-3 rounded-xl overflow-hidden border border-border/30 shadow-inner">
+        {/* Code block header */}
+        <div className="flex items-center justify-between bg-zinc-900 dark:bg-zinc-800 px-4 py-2">
+          <span className="text-[11px] text-zinc-400 uppercase font-semibold select-none">{language || "code"}</span>
+          <button
+            onClick={() => navigator.clipboard.writeText(codeContent)}
+            className="text-[11px] text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition cursor-pointer border-none bg-transparent outline-none"
+          >
+            <span className="google-symbols text-[14px]">content_copy</span>
+            Copy
+          </button>
         </div>
-        <code>{codeContent}</code>
-      </pre>
+        <pre className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 p-4 font-mono text-[13px] overflow-x-auto">
+          <code>{codeContent}</code>
+        </pre>
+      </div>
     )
     lastIndex = codeBlockRegex.lastIndex
   }
@@ -347,9 +358,10 @@ export function ChatPanel({
           },
           body: JSON.stringify({
             query: queryText,
-            model_config: modelConfig,
+            llm_config: modelConfig,
             notebook_id: currentNotebook?.id,
             document_ids: selectedDocumentIds,
+            chat_id: activeChatId,
           }),
         }
       )
